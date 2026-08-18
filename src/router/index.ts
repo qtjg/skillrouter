@@ -9,6 +9,9 @@ import { defaultSemanticMatcher, defaultLlmReranker } from "./semantic.ts";
 import { RouterError } from "../utils/errors.ts";
 import { globalBus } from "../core/events.ts";
 
+export { expandDependencies, sortByDependencies, requiredDependencies } from "./dependency-resolver.ts";
+export type { DependencyResolution, MissingDependency, OptionalMiss } from "./dependency-resolver.ts";
+
 export interface RouterOptions {
   semanticMatcher?: SemanticMatcher;
   llmReranker?: LlmReRanker;
