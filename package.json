@@ -26,6 +26,7 @@
     "test": "node --experimental-strip-types --test \"tests/unit/*.test.ts\" \"tests/router/*.test.ts\"",
     "test:unit": "node --experimental-strip-types --test \"tests/unit/*.test.ts\"",
     "test:router": "node --experimental-strip-types --test \"tests/router/*.test.ts\"",
+    "test:cli": "node --experimental-transform-types --test \"tests/cli/*.test.ts\"",
     "test:security": "node --test tests/security/",
     "test:adapters": "node --test tests/adapters/",
     "benchmark": "node --test tests/benchmark/",
