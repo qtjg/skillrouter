@@ -48,9 +48,11 @@ export function buildPlan(input: PlannerInput): PlanAction[] {
 
   const excludedIds = new Set<string>(input.options.never);
   const forcedIds = new Set<string>(input.options.always);
+  const avoided = new Set(input.options.avoid);
 
   for (const score of sorted) {
     if (excludedIds.has(score.capability.id)) continue;
+    if (avoided.has(score.capability.id) && !forcedIds.has(score.capability.id)) continue;
     if (score.score < input.options.threshold && !forcedIds.has(score.capability.id)) continue;
     selected.push(score);
   }
@@ -72,10 +74,10 @@ export function buildPlan(input: PlannerInput): PlanAction[] {
   }
 
   const activatedIds = new Set(activated.map((s) => s.capability.id));
-  const avoided = new Set(input.options.avoid);
 
   for (const score of sorted) {
     const id = score.capability.id;
+    if (excludedIds.has(id)) continue;
     const installed = input.installedStates.get(id);
     const isActive = installed?.state === "ACTIVE" || installed?.state === "CANDIDATE";
     const willActivate = activatedIds.has(id);
