@@ -90,7 +90,7 @@ Legend: `[x]` done, `[~]` partial, `[ ]` pending.
 - [x] README.md
 - [x] CONTRIBUTING.md
 - [x] SECURITY.md
-- [x] LICENSE (Apache-2.0)
+- [x] LICENSE (MIT)
 - [~] docs/ (architecture, manifest, routing, adapters, security, cli-reference, configuration)
 - [x] schemas/skillrouter-v1.schema.json
 - [x] examples/catalog (out-of-the-box capabilities)

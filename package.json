@@ -2,7 +2,7 @@
   "name": "skillrouter",
   "version": "0.1.0",
   "description": "The capability router for AI agents. Give your AI the right capabilities at the right time.",
-  "license": "Apache-2.0",
+  "license": "MIT",
   "type": "module",
   "engines": {
     "node": ">=22.5.0"

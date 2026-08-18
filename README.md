@@ -75,4 +75,4 @@ Design rationale and trade-offs: [DECISIONS.md](DECISIONS.md). Implementation pr
 
 ## License
 
-[Apache License 2.0](LICENSE)
+[MIT License](LICENSE) — Copyright (c) 2026 Mayank Bhaskar
