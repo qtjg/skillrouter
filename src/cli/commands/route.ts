@@ -2,6 +2,7 @@ import type { CliContext, CommandDef } from "../framework.ts";
 import { withApp, type AppContext } from "../context.ts";
 import { section, line, ok, info, warning, fail, jsonOut, dim, bold, green, emoji, riskColor, promptYesNo } from "../output.ts";
 import { Router } from "../../router/index.ts";
+import { expandDependencies } from "../../router/dependency-resolver.ts";
 import { analyzeProject } from "../../project/analyzer.ts";
 import { getGitContext } from "../../git/context.ts";
 import { analyzeTask } from "../../router/analyzer.ts";
@@ -46,6 +47,8 @@ export const routeCommand: CommandDef = {
       const dryRun = Boolean(ctx.flags["dry-run"]) || app.config.router.mode === "manual";
       const activations = decision.plan.filter((p) => p.action === "activate");
       const deactivations = decision.plan.filter((p) => p.action === "deactivate");
+      const dependencyCheck = expandDependencies(activations.map((a) => a.capabilityId), capabilities);
+      const missingInstalledDeps = dependencyCheck.missing.filter((m) => !installed.has(m.id));
 
       if (ctx.json || ctx.flags["json"]) {
         jsonOut({
@@ -57,10 +60,24 @@ export const routeCommand: CommandDef = {
           activate: activations.map((a) => ({ id: a.capabilityId, score: a.score, confidence: a.confidence, reasons: a.reasons.map((r) => r.text) })),
           deactivate: deactivations.map((a) => ({ id: a.capabilityId, score: a.score })),
           context: { estimate: decision.contextEstimate, budget: decision.contextBudget },
+          dependencies: {
+            activationOrder: dependencyCheck.ordered,
+            missing: missingInstalledDeps,
+            optionalMiss: dependencyCheck.optionalMiss,
+            cycles: dependencyCheck.cycles,
+          },
           dryRun,
         });
       } else {
         renderRoute(decision, task, activations.length, deactivations.length);
+        if (missingInstalledDeps.length > 0) {
+          line("");
+          warning("Missing required dependencies:");
+          for (const dep of missingInstalledDeps) {
+            line(`    ${dep.id}${dep.version ? `@${dep.version}` : ""} — needed by ${dep.requiredBy.join(", ")}`);
+          }
+          info("Install them first: `skillrouter install <capability>`");
+        }
       }
 
       await app.storage.addHistory({
