@@ -146,6 +146,7 @@ export function createDecision(
     decisionId: randomId(),
     task,
     mode: options.mode,
+    strategy: ctx.config.router.strategy,
     analysis,
     scores: scoresSort(scores),
     plan,

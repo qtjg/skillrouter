@@ -190,6 +190,16 @@ export function validateManifest(doc: ManifestDoc): ValidationResult {
       const m = metadata as Record<string, unknown>;
       stringList(m["categories"], "metadata.categories", problems);
       stringList(m["tags"], "metadata.tags", problems);
+      for (const [key, label] of [["quality", "0–100"], ["popularity", "0–100"], ["successRate", "0–100"], ["cost", "1–5"], ["latency", "1–5"], ["reliability", "0–1"]] as const) {
+        if (m[key] !== undefined && typeof m[key] !== "number") {
+          push({ path: `metadata.${key}`, message: `must be a number (${label})` });
+        }
+      }
+    }
+  }
+  for (const key of ["cost", "latency", "reliability"] as const) {
+    if (doc[key] !== undefined && typeof doc[key] !== "number") {
+      push({ path: key, message: "must be a number" });
     }
   }
 
@@ -336,6 +346,13 @@ export function normalizeManifest(doc: ManifestDoc, manifestPath: string): Capab
   const riskRaw = doc["risk"] as Record<string, unknown> | undefined;
   const contextRaw = doc["context"] as Record<string, unknown> | undefined;
   const metadataRaw = doc["metadata"] as Record<string, unknown> | undefined;
+  // PRD §9 exposes cost/latency/reliability at the capability root; accept both
+  // locations, with `metadata` winning.
+  const metaNum = (key: string): number | undefined => {
+    const v = metadataRaw?.[key];
+    if (typeof v === "number") return v;
+    return typeof doc[key] === "number" ? (doc[key] as number) : undefined;
+  };
 
   const permissions = normalizePermissions(doc["permissions"]);
 
@@ -387,6 +404,9 @@ export function normalizeManifest(doc: ManifestDoc, manifestPath: string): Capab
           quality: typeof metadataRaw["quality"] === "number" ? metadataRaw["quality"] : undefined,
           popularity: typeof metadataRaw["popularity"] === "number" ? metadataRaw["popularity"] : undefined,
           successRate: typeof metadataRaw["successRate"] === "number" ? metadataRaw["successRate"] : undefined,
+          cost: metaNum("cost"),
+          latency: metaNum("latency"),
+          reliability: metaNum("reliability"),
         }
       : undefined,
     resources: stringList(doc["resources"], "resources", problems),

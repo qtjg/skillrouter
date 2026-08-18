@@ -4,6 +4,7 @@ import { normalizePhrases } from "../utils/text.ts";
 import { computeRisk } from "../security/risk.ts";
 import { matchesGlob } from "../utils/glob.ts";
 import type { ProjectAnalysis } from "../project/analyzer.ts";
+import type { RouterStrategy } from "../config/config.ts";
 
 export const W = {
   keyword: 12,
@@ -26,10 +27,37 @@ export const W = {
   trustUnknown: -6,
   qualityFactor: 8,
   historicalFactor: 8,
+  reliabilityFactor: 8,
+  costFactor: 5,
+  latencyFactor: 5,
   contextPenaltyPerK: 3,
   contextPenaltyCap: 9,
   permissionPenalty: 12,
-} as const;
+};
+
+export type Weights = Record<keyof typeof W, number>;
+
+/**
+ * Strategy presets (PRD §13/§50). Balanced is the identity — the weights a
+ * deployment would have seen before strategies existed — so existing routing
+ * behavior is preserved unless the user opts into another strategy.
+ */
+export function weightsFor(st: RouterStrategy): Weights {
+  switch (st) {
+    case "quality":
+      return { ...W, qualityFactor: 24, historicalFactor: 16, reliabilityFactor: 16, trustUnknown: -9, permissionPenalty: 14, costFactor: 3, latencyFactor: 3 };
+    case "speed":
+      return { ...W, latencyFactor: 14, contextPenaltyPerK: 6, contextPenaltyCap: 14, qualityFactor: 4, historicalFactor: 6, reliabilityFactor: 6, permissionPenalty: 10 };
+    case "cheap":
+      return { ...W, costFactor: 14, contextPenaltyPerK: 8, contextPenaltyCap: 18, qualityFactor: 4, historicalFactor: 6, reliabilityFactor: 6, permissionPenalty: 10 };
+    case "minimal":
+      return { ...W, keyword: 8, technology: 10, intent: 12, nameOrId: 14, description: 0.3, qualityFactor: 4, historicalFactor: 4, reliabilityFactor: 4, costFactor: 6, latencyFactor: 6, contextPenaltyPerK: 6, contextPenaltyCap: 14 };
+    case "safe":
+      return { ...W, permissionPenalty: 30, costFactor: 8, latencyFactor: 8, trustUnknown: -9, trustVerified: 10, trustTrusted: 7, qualityFactor: 6, historicalFactor: 6, reliabilityFactor: 6 };
+    default:
+      return W;
+  }
+}
 
 export const MAX_SCORE = 100;
 
@@ -78,7 +106,9 @@ export function scoreSingleCapability(
   task: TaskAnalysis,
   ctx: RouteContext,
   prepared: Prepared,
+  weights?: Weights,
 ): Pick<CapabilityScore, "capability" | "score" | "signals" | "breakdown" | "compatibility" | "trust" | "riskLevel" | "conflictWith"> {
+  const w = weights ?? W;
   const signals: Signal[] = [];
   const breakdown: FactorBreakdown = {
     keyword: 0,
@@ -92,6 +122,8 @@ export function scoreSingleCapability(
     trust: 0,
     quality: 0,
     historical: 0,
+    cost: 0,
+    latency: 0,
     contextCost: 0,
     permissionCost: 0,
     conflict: 0,
@@ -112,27 +144,27 @@ export function scoreSingleCapability(
   );
 
   if (matchedKeywords.length > 0) {
-    add("keyword", Math.min(3, matchedKeywords.length) * W.keyword, `matched ${matchedKeywords.length} keyword(s): ${matchedKeywords.slice(0, 3).join(", ")}`);
+    add("keyword", Math.min(3, matchedKeywords.length) * w.keyword, `matched ${matchedKeywords.length} keyword(s): ${matchedKeywords.slice(0, 3).join(", ")}`);
   }
   if (matchedTech.length > 0) {
-    add("technology", Math.min(3, matchedTech.length) * W.technology, `matched ${matchedTech.length} technology term(s): ${matchedTech.slice(0, 3).join(", ")}`);
+    add("technology", Math.min(3, matchedTech.length) * w.technology, `matched ${matchedTech.length} technology term(s): ${matchedTech.slice(0, 3).join(", ")}`);
   }
   if (matchedIntents.length > 0) {
-    add("taskSimilarity", Math.min(3, matchedIntents.length) * W.intent, `matched ${matchedIntents.length} intent phrase(s): ${matchedIntents.slice(0, 3).join(", ")}`);
+    add("taskSimilarity", Math.min(3, matchedIntents.length) * w.intent, `matched ${matchedIntents.length} intent phrase(s): ${matchedIntents.slice(0, 3).join(", ")}`);
   }
   if (matchedDescription.length > 0) {
-    add("taskSimilarity", Math.min(8, matchedDescription.length * W.description), `${matchedDescription.length} term(s) matched the capability description`);
+    add("taskSimilarity", Math.min(8, matchedDescription.length * w.description), `${matchedDescription.length} term(s) matched the capability description`);
   }
 
   const idTokens = new Set<string>([...normalizePhrases(capability.id)]);
   const nameTokens = new Set<string>([...normalizePhrases(capability.name)]);
   if ([...taskTokens].some((t) => idTokens.has(t) || nameTokens.has(t))) {
-    add("taskSimilarity", W.nameOrId, `capability name "${capability.name}" matches task`);
+    add("taskSimilarity", w.nameOrId, `capability name "${capability.name}" matches task`);
   }
 
   // --- Project context ---
   if (ctx.project) {
-    projectFactor(capability, ctx.project, prepared, add);
+    projectFactor(capability, ctx.project, prepared, add, w);
   }
 
   // --- Git context ---
@@ -140,7 +172,7 @@ export function scoreSingleCapability(
     const gitFiles = [...new Set([...ctx.git.changed, ...ctx.git.staged])];
     const hits = gitFiles.filter((f) => matchesGlob(f, prepared.gitPatterns)).slice(0, 3);
     if (hits.length > 0) {
-      add("git", Math.min(2, hits.length) * W.gitPattern, `changed files match git patterns: ${hits.join(", ")}`);
+      add("git", Math.min(2, hits.length) * w.gitPattern, `changed files match git patterns: ${hits.join(", ")}`);
     }
   }
 
@@ -148,55 +180,67 @@ export function scoreSingleCapability(
   if (prepared.filePatterns.length > 0 && ctx.project) {
     const hits = ctx.project.configFiles.filter((f) => matchesGlob(f, prepared.filePatterns)).slice(0, 3);
     if (hits.length > 0) {
-      add("file", W.filePattern, `project files match capability patterns: ${hits.join(", ")}`);
+      add("file", w.filePattern, `project files match capability patterns: ${hits.join(", ")}`);
     }
   }
 
   // --- Dependency match ---
   const depHits = (ctx.project?.dependencies ?? []).filter((d) => prepared.phrases.has(d) || prepared.technologies.has(d) || depRelates(d, capability)).slice(0, 3);
   if (depHits.length > 0) {
-    add("dependency", Math.min(2, depHits.length) * W.projectDependency, `project dependencies include: ${depHits.join(", ")}`);
+    add("dependency", Math.min(2, depHits.length) * w.projectDependency, `project dependencies include: ${depHits.join(", ")}`);
   }
 
   // --- Compatibility with target agent ---
   const agent = ctx.agents[0] ?? "generic";
   const compat: Compatibility = capability.compatibility[agent] ?? capability.compatibility["generic"] ?? "adaptable";
-  if (compat === "native") add("compatibility", W.native, `native support in ${agent}`);
-  else if (compat === "compatible") add("compatibility", W.compatible, `compatible with ${agent} via adapter`);
-  else if (compat === "adaptable") add("compatibility", W.adaptable, `adaptable in ${agent}`);
-  else add("compatibility", W.unsupported, `unsupported in ${agent}`);
+  if (compat === "native") add("compatibility", w.native, `native support in ${agent}`);
+  else if (compat === "compatible") add("compatibility", w.compatible, `compatible with ${agent} via adapter`);
+  else if (compat === "adaptable") add("compatibility", w.adaptable, `adaptable in ${agent}`);
+  else add("compatibility", w.unsupported, `unsupported in ${agent}`);
 
   // --- Trust ---
   const trust: TrustLevel = capability.trust ?? "unknown";
-  if (trust === "verified") add("trust", W.trustVerified, "verified publisher");
-  else if (trust === "trusted") add("trust", W.trustTrusted, "trusted by your configuration");
-  else if (trust === "community") add("trust", W.trustCommunity, "community capability");
+  if (trust === "verified") add("trust", w.trustVerified, "verified publisher");
+  else if (trust === "trusted") add("trust", w.trustTrusted, "trusted by your configuration");
+  else if (trust === "community") add("trust", w.trustCommunity, "community capability");
   else if (trust === "blocked") add("trust", -100, "blocked capability");
-  else add("trust", W.trustUnknown, "publisher is unverified");
+  else add("trust", w.trustUnknown, "publisher is unverified");
 
   // --- Quality & history ---
   const quality = capability.metadata?.quality;
-  if (quality !== undefined) add("quality", (quality / 100) * W.qualityFactor, `declared quality ${quality}/100`);
+  if (quality !== undefined) add("quality", (quality / 100) * w.qualityFactor, `declared quality ${quality}/100`);
 
-  // --- Historical: fresh dynamic metrics win; declared successRate is the fallback ---
+  // --- Historical: fresh dynamic metrics win; declared successRate is the fallback; declared reliability last ---
   const metric = ctx.metrics?.get(capability.id);
   if (metric && metric.tasks > 0) {
     const rate = metric.successes / metric.tasks;
     const rounded = Math.round(rate * 1000) / 1000;
-    add("historical", rounded * W.historicalFactor, `historical success rate ${(rate * 100).toFixed(0)}% (${metric.tasks} observations)`);
+    add("historical", rounded * w.historicalFactor, `historical success rate ${(rate * 100).toFixed(0)}% (${metric.tasks} observations)`);
   } else if (capability.metadata?.successRate !== undefined) {
-    add("historical", (capability.metadata.successRate / 100) * W.historicalFactor, `declared success rate ${capability.metadata.successRate}%`);
+    add("historical", (capability.metadata.successRate / 100) * w.historicalFactor, `declared success rate ${capability.metadata.successRate}%`);
+  } else if (capability.metadata?.reliability !== undefined) {
+    add("historical", capability.metadata.reliability * w.historicalFactor, `declared reliability ${Math.round(capability.metadata.reliability * 100)}%`);
+  }
+
+  // --- Cost & latency (declared overhead, PRD §9/§50) ---
+  const cost = capability.metadata?.cost;
+  if (cost !== undefined && cost > 0) {
+    add("cost", -cost * w.costFactor, `declared cost ${cost}/5`);
+  }
+  const latency = capability.metadata?.latency;
+  if (latency !== undefined && latency > 0) {
+    add("latency", -latency * w.latencyFactor, `declared latency ${latency}/5`);
   }
 
   // --- Penalties ---
   const estimatedTokens = capability.context?.estimatedTokens ?? 0;
   if (estimatedTokens > 0) {
-    const penalty = Math.min(W.contextPenaltyCap, (estimatedTokens / 1000) * W.contextPenaltyPerK);
+    const penalty = Math.min(w.contextPenaltyCap, (estimatedTokens / 1000) * w.contextPenaltyPerK);
     add("contextCost", -penalty, `context cost ~${estimatedTokens} tokens`);
   }
 
   const risk = computeRisk(capability);
-  const permPenalty = (risk.score / 100) * W.permissionPenalty;
+  const permPenalty = (risk.score / 100) * w.permissionPenalty;
   if (permPenalty > 0) add("permissionCost", -permPenalty, `risk ${risk.score}/100 (${risk.level})`);
 
   const raw = Object.values(breakdown).reduce((a, b) => a + b, 0);
@@ -227,16 +271,17 @@ function projectFactor(
   project: ProjectAnalysis,
   prepared: Prepared,
   add: (factor: keyof FactorBreakdown, weight: number, text: string) => void,
+  w: Weights,
 ): void {
   const langHits = project.languages.filter((l) => prepared.technologies.has(l.toLowerCase()) || prepared.phrases.has(l.toLowerCase()));
   if (langHits.length > 0) {
-    add("project", W.projectLanguage, `project language: ${langHits.join(", ")}`);
+    add("project", w.projectLanguage, `project language: ${langHits.join(", ")}`);
   }
 
   const matchList = (values: string[], label: string, limit = 3): void => {
     const hits = values.filter((v) => prepared.phrases.has(v) || prepared.technologies.has(v)).slice(0, limit);
     if (hits.length > 0) {
-      add("project", Math.min(limit, hits.length) * W.projectFramework, `project ${label}: ${hits.join(", ")}`);
+      add("project", Math.min(limit, hits.length) * w.projectFramework, `project ${label}: ${hits.join(", ")}`);
     }
   };
 

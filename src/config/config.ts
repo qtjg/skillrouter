@@ -8,6 +8,11 @@ import { deepMerge } from "../utils/object.ts";
 
 export type RouterMode = "manual" | "assisted" | "automatic" | "autonomous";
 
+/** Scoring strategy presets (PRD §13/§50). */
+export type RouterStrategy = "balanced" | "quality" | "speed" | "cheap" | "minimal" | "safe";
+
+export const ROUTER_STRATEGIES: RouterStrategy[] = ["balanced", "quality", "speed", "cheap", "minimal", "safe"];
+
 export interface RouterConfig {
   mode: RouterMode;
   always: string[];
@@ -18,6 +23,7 @@ export interface RouterConfig {
   semantic: boolean;
   model: string | null;
   maxActivations: number;
+  strategy: RouterStrategy;
 }
 
 export interface CapabilitiesConfig {
@@ -69,6 +75,7 @@ export const DEFAULT_CONFIG: SkillRouterConfig = {
     semantic: false,
     model: null,
     maxActivations: 5,
+    strategy: "balanced",
   },
   capabilities: {
     autoInstall: false,
@@ -160,6 +167,9 @@ function validateConfig(config: SkillRouterConfig, path: string): SkillRouterCon
   const routerModes = ["manual", "assisted", "automatic", "autonomous"];
   if (!routerModes.includes(config.router.mode)) {
     throw new ConfigError(`router.mode in ${path} must be one of ${routerModes.join(", ")}`);
+  }
+  if (!ROUTER_STRATEGIES.includes(config.router.strategy)) {
+    throw new ConfigError(`router.strategy in ${path} must be one of ${ROUTER_STRATEGIES.join(", ")}`);
   }
   if (typeof config.router.threshold !== "number" || config.router.threshold < 0 || config.router.threshold > 100) {
     throw new ConfigError(`router.threshold in ${path} must be a number between 0 and 100`);

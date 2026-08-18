@@ -103,11 +103,41 @@ test("main route --json --dry-run returns a machine-readable decision", async ()
     try {
       const code = await main(["route", "write unit tests for the API", "--json", "--dry-run"]);
       assert.equal(code, 0);
-      const parsed = JSON.parse(captured.out) as { decisionId: string; mode: string; dryRun: boolean; activate: unknown[] };
+      const parsed = JSON.parse(captured.out) as { decisionId: string; mode: string; strategy: string; dryRun: boolean; activate: unknown[] };
       assert.equal(typeof parsed.decisionId, "string");
       assert.equal(parsed.mode, "assisted");
+      assert.equal(parsed.strategy, "balanced");
       assert.equal(parsed.dryRun, true);
       assert.ok(Array.isArray(parsed.activate));
+    } finally {
+      release();
+    }
+  });
+});
+
+test("main route --strategy overrides the config strategy", async () => {
+  await withCleanEnv(async () => {
+    await writeFile(join(process.cwd(), "skillrouter.yaml"), "project:\n  name: cli-test\n", "utf8");
+    capture();
+    try {
+      const code = await main(["route", "write unit tests for the API", "--json", "--dry-run", "--strategy", "safe"]);
+      assert.equal(code, 0);
+      const parsed = JSON.parse(captured.out) as { strategy: string };
+      assert.equal(parsed.strategy, "safe");
+    } finally {
+      release();
+    }
+  });
+});
+
+test("main route rejects an invalid --strategy", async () => {
+  await withCleanEnv(async () => {
+    await writeFile(join(process.cwd(), "skillrouter.yaml"), "project:\n  name: cli-test\n", "utf8");
+    capture();
+    try {
+      const code = await main(["route", "write unit tests for the API", "--dry-run", "--strategy", "bogus"]);
+      assert.equal(code, 1);
+      assert.match(captured.out, /--strategy must be one of/);
     } finally {
       release();
     }

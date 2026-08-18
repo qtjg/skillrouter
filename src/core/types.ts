@@ -159,6 +159,12 @@ export interface CapabilityMetadata {
   quality?: number;
   popularity?: number;
   successRate?: number;
+  /** Declared overhead on a unitless 1–5 scale (PRD §9/§50); used by cost-aware strategies. */
+  cost?: number;
+  /** Declared latency on a unitless 1–5 scale; used by speed-aware strategies. */
+  latency?: number;
+  /** Declared reliability 0–1; used as the last-resort history proxy. */
+  reliability?: number;
 }
 
 export interface Capability {

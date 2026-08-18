@@ -14,6 +14,7 @@ import { readLockfile, writeLockfile } from "../../lockfile/lockfile.ts";
 import { audit } from "../../security/audit.ts";
 import { globalBus } from "../../core/events.ts";
 import type { RouteContext, RouterDecision } from "../../router/types.ts";
+import { ROUTER_STRATEGIES, type RouterStrategy } from "../../config/config.ts";
 import { join } from "node:path";
 
 export const routeCommand: CommandDef = {
@@ -26,9 +27,10 @@ export const routeCommand: CommandDef = {
     { name: "dry-run", description: "show the plan without activating or deactivating anything" },
     { name: "yes", short: "y", description: "apply the plan without interactive confirmation" },
     { name: "apply", description: "apply the plan (activate/deactivate) in the connected agents" },
+    { name: "strategy", type: "string", description: `override the routing strategy: ${ROUTER_STRATEGIES.join("|")} (default: config router.strategy)` },
     { name: "json", description: "machine-readable output" },
   ],
-  examples: ["skillrouter route \"audit my authentication changes\"", "skillrouter route \"deploy the app\" --dry-run", "skillrouter route \"write tests\" --apply"],
+  examples: ["skillrouter route \"audit my authentication changes\"", "skillrouter route \"deploy the app\" --dry-run", "skillrouter route \"write tests\" --apply", "skillrouter route \"migrate the database\" --strategy safe"],
   handler: async (ctx) => {
     return withApp(ctx, async (app) => {
       const task = ctx.positionals.join(" ");
@@ -41,7 +43,17 @@ export const routeCommand: CommandDef = {
       const installed = new Map((await app.storage.allInstalled()).map((i) => [i.id, i]));
       const agents = await detectAgentIds(app);
 
-      const routeCtx: RouteContext = { task, cwd: app.cwd, project, git, capabilities, installed, agents, config: app.config, metrics: new Map((await app.storage.allMetrics()).map((m) => [m.capabilityId, m])) };
+      const strategyFlag = ctx.flags["strategy"];
+      let config = app.config;
+      if (strategyFlag !== undefined) {
+        if (typeof strategyFlag !== "string" || !ROUTER_STRATEGIES.includes(strategyFlag as RouterStrategy)) {
+          fail(`--strategy must be one of: ${ROUTER_STRATEGIES.join(", ")}`);
+          return 1;
+        }
+        config = { ...app.config, router: { ...app.config.router, strategy: strategyFlag as RouterStrategy } };
+      }
+
+      const routeCtx: RouteContext = { task, cwd: app.cwd, project, git, capabilities, installed, agents, config, metrics: new Map((await app.storage.allMetrics()).map((m) => [m.capabilityId, m])) };
       const decision = await new Router().route(routeCtx);
 
       const dryRun = Boolean(ctx.flags["dry-run"]) || app.config.router.mode === "manual";
@@ -55,6 +67,7 @@ export const routeCommand: CommandDef = {
           task,
           decisionId: decision.decisionId,
           mode: decision.mode,
+          strategy: decision.strategy,
           latencyMs: decision.latencyMs,
           analysis: decision.analysis,
           activate: activations.map((a) => ({ id: a.capabilityId, score: a.score, confidence: a.confidence, reasons: a.reasons.map((r) => r.text) })),

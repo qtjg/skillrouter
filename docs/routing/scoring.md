@@ -26,11 +26,27 @@ Every capability is scored deterministically as a weighted sum of independent fa
 | `trustUnknown` | -6 |
 | `qualityFactor` | 8 |
 | `historicalFactor` | 8 |
+| `reliabilityFactor` | 8 |
+| `costFactor` | 5 |
+| `latencyFactor` | 5 |
 | `contextPenaltyPerK` | 3 |
 | `contextPenaltyCap` | 9 |
 | `permissionPenalty` | 12 |
 
 `MAX_SCORE = 100`; the raw sum is clamped to `[0, 100]`.
+
+## Strategies (`router.strategy`, PRD §13/§50)
+
+`weightsFor(strategy)` in `src/router/factors.ts` returns preset weight overrides. **Balanced is the identity** — it reproduces the pre-strategy weights exactly, so existing deployments are unaffected. `skillrouter route --strategy <s>` overrides the config for one run; the effective strategy is reported in the decision (`strategy` field, JSON mode).
+
+| Strategy | Purpose | Adjusts |
+| --- | --- | --- |
+| `balanced` | default; no override | — |
+| `quality` | best output quality | `qualityFactor` 8→24, `historicalFactor` 8→16, `reliabilityFactor` 8→16, `trustUnknown` -6→-9, `permissionPenalty` 12→14, `costFactor`/`latencyFactor` 5→3 |
+| `speed` | lowest latency | `latencyFactor` →14, `contextPenaltyPerK`→6, `contextPenaltyCap`→14, quality/history factors halved, `permissionPenalty`→10 |
+| `cheap` | lowest cost | `costFactor`→14, `contextPenaltyPerK`→8, `contextPenaltyCap`→18, quality/history halved, `permissionPenalty`→10 |
+| `minimal` | context-conscious activation | Level-1 match weights reduced (keyword 8, technology 10, intent 12, nameOrId 14, description 0.3), quality/history halved, cost/latency/token penalties raised |
+| `safe` | minimum risk | `permissionPenalty`→30, `trustUnknown`→-9, verified 10/trusted 7, quality/history 6, `costFactor`/`latencyFactor`→8 |
 
 ## How factor hits are accumulated
 
@@ -43,9 +59,10 @@ Every capability is scored deterministically as a weighted sum of independent fa
 
 ## Penalties
 
-- **Context cost:** `min(contextPenaltyCap, estimatedTokens / 1000 * contextPenaltyPerK)` — i.e. 3 points per 1000 estimated tokens, capped at 9.
-- **Permission cost:** `(risk.score / 100) * permissionPenalty` — the risk engine's 0–100 score scales 12 points. Only positive scores penalize.
-- **Quality/history:** declared `metadata.quality` adds its fraction of 8 points. History: **fresh reliability observations** (storage `skill_metrics`, recorded via `skillrouter learn` or the ReliabilityEngine) override declared `metadata.successRate`. The factor is the observed success rate × 8; a capability without observations falls back to the declared rate, and to zero when neither exists. Observations are bounded (see learning/metrics.ts), so a few executions cannot distort ranking.
+- **Context cost:** `min(contextPenaltyCap, estimatedTokens / 1000 * contextPenaltyPerK)` — i.e. 3 points per 1000 estimated tokens, capped at 9 (weights change per strategy).
+- **Cost / latency:** declared `metadata.cost` (1–5) subtracts `cost * costFactor`; declared `metadata.latency` (1–5) subtracts `latency * latencyFactor`. Accepted at the manifest root or in `metadata` (PRD §9), `metadata` wins.
+- **Permission cost:** `(risk.score / 100) * permissionPenalty` — the risk engine's 0–100 score scales 12 points (30 under `safe`). Only positive scores penalize.
+- **Quality/history:** declared `metadata.quality` adds its fraction of 8 points. History: **fresh reliability observations** (storage `skill_metrics`, recorded via `skillrouter learn` or the ReliabilityEngine) override declared `metadata.successRate`, which in turn overrides declared `metadata.reliability` (0–1). Each factor is the rate/fraction × its weight; a capability with none of the three contributes nothing to `historical`. Observations are bounded (see learning/metrics.ts), so a few executions cannot distort ranking.
 
 Signals are kept per factor (`Signal {type, text, weight}`) and feed `skillrouter explain`, so every point in a score is attributable.
 

@@ -4,6 +4,7 @@ import { section, line, ok, fail, warning, info, table, jsonOut, promptYesNo } f
 import { detectAll } from "../../adapters/env.ts";
 import { refreshAll } from "../../registry/indexer.ts";
 import { writeProjectConfig, DEFAULT_CONFIG, type SkillRouterConfig } from "../../config/config.ts";
+import { ROUTER_STRATEGIES, type RouterStrategy } from "../../config/config.ts";
 import { audit } from "../../security/audit.ts";
 import { analyzeProject } from "../../project/analyzer.ts";
 import { getGitContext } from "../../git/context.ts";
@@ -236,6 +237,9 @@ export const configCommand: CommandDef = {
       if (action === "set") {
         if (!key) throw new Error("Usage: skillrouter config set <key> <value>");
         const value = parseConfigValue(rest.join(" ") ?? rest[0] ?? "true");
+        if (key === "router.strategy" && (typeof value !== "string" || !ROUTER_STRATEGIES.includes(value as RouterStrategy))) {
+          throw new Error(`router.strategy must be one of: ${ROUTER_STRATEGIES.join(", ")}`);
+        }
         const { setConfigValue } = await import("../../config/config.ts");
         const path = await setConfigValue(key, value, app.cwd);
         await audit(app.storage, "user", "config.set", null, `${key}=${typeof value === "string" ? value : JSON.stringify(value)}`);

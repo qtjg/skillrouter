@@ -2,7 +2,7 @@ import type { RouterDecision, RouteContext, TaskAnalysis, CapabilityScore, Seman
 import type { InstalledCapabilityRow } from "../storage/types.ts";
 import type { Capability } from "../core/types.ts";
 import { analyzeTask } from "./analyzer.ts";
-import { prepareCapability, scoreSingleCapability } from "./factors.ts";
+import { prepareCapability, scoreSingleCapability, weightsFor } from "./factors.ts";
 import { resolveConflicts } from "./conflicts.ts";
 import { buildPlan, createDecision, defaultPlannerOptions, type PlannerOptions } from "./planner.ts";
 import { defaultSemanticMatcher, defaultLlmReranker } from "./semantic.ts";
@@ -113,9 +113,10 @@ export class Router {
   }
 
   private rank(ctx: RouteContext, analysis: TaskAnalysis): CapabilityScore[] {
+    const weights = weightsFor(ctx.config.router.strategy);
     const scores: CapabilityScore[] = [];
     for (const capability of ctx.capabilities) {
-      const score = scoreSingleCapability(capability, analysis, ctx, preparedFor(capability));
+      const score = scoreSingleCapability(capability, analysis, ctx, preparedFor(capability), weights);
       if (score.breakdown.trust <= -100) continue; // blocked capability
       scores.push(score);
     }

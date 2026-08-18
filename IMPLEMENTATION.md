@@ -124,7 +124,9 @@ Legend: `[x]` done, `[~]` partial, `[ ]` pending.
 - [x] `stats` CLI command (table + JSON)
 - [x] Failure recovery & fallback chains (PRD §21)
 - [x] `learn` outcome recording command (failures suggest a declared fallback)
-- [ ] Routing strategies (balanced/quality/speed/cheap/minimal/safe) + cost/latency metadata
+- [x] Routing strategies (balanced/quality/speed/cheap/minimal/safe) + cost/latency metadata (route `--strategy`, `router.strategy` config, weight presets in `src/router/factors.ts`)
+- [ ] Cookbook skills: multi-step planning combining router + runtime observations (PRD §14)
+- [ ] Timeline view of routing history (PRD §10, `--timeline`)
 
 ## Future (documented, not built in V0.1)
 

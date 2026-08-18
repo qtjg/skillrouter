@@ -36,6 +36,8 @@ export interface FactorBreakdown {
   trust: number;
   quality: number;
   historical: number;
+  cost: number;
+  latency: number;
   contextCost: number;
   permissionCost: number;
   conflict: number;
@@ -68,6 +70,8 @@ export interface RouterDecision {
   decisionId: string;
   task: string;
   mode: string;
+  /** Scoring strategy applied (PRD §13/§50). */
+  strategy: string;
   analysis: TaskAnalysis;
   scores: CapabilityScore[];
   plan: PlanAction[];

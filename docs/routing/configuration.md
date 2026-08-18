@@ -26,6 +26,7 @@ router:
   semantic: false             # enable the lexical semantic matcher (Level 2)
   model: null                 # LLM rerank model id (Level 3); default null
   maxActivations: 5           # max capabilities activated per plan (default 5)
+  strategy: balanced          # balanced | quality | speed | cheap | minimal | safe (default: balanced)
 
 capabilities:
   autoInstall: false          # install on demand during routing (default false)

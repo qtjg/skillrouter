@@ -117,6 +117,46 @@ fallbacks:
   assert.deepEqual(cap.fallbacks, ["browser-search", "http-fetch"]);
 });
 
+test("normalizeManifest accepts cost/latency/reliability at the root and in metadata (metadata wins)", () => {
+  const content = `schema: skillrouter/v1
+id: api-consumer
+name: API Consumer
+version: 1.0.0
+description: queries remote APIs
+type: skill
+cost: 3
+latency: 4
+reliability: 0.97
+metadata:
+  cost: 2
+  latency: 2
+  reliability: 0.94
+`;
+  const cap = normalizeManifest(parseManifestYaml(content, "api.yaml"), "api.yaml");
+  assert.equal(cap.metadata?.cost, 2);
+  assert.equal(cap.metadata?.latency, 2);
+  assert.equal(cap.metadata?.reliability, 0.94);
+});
+
+test("validateManifest rejects non-numeric cost/latency/reliability", () => {
+  const doc = parseManifestYaml(
+    `schema: skillrouter/v1
+id: api-consumer
+name: API Consumer
+version: 1.0.0
+description: queries remote APIs
+type: skill
+cost: expensive
+metadata:
+  reliability: nope
+`,
+    "api.yaml",
+  );
+  const report = validateManifest(doc);
+  assert.ok(report.problems.some((p) => p.path === "cost" && p.message.includes("number")));
+  assert.ok(report.problems.some((p) => p.path === "metadata.reliability" && p.message.includes("number")));
+});
+
 test("validateManifest rejects non-array fallbacks", () => {
   const doc = parseManifestYaml(
     `schema: skillrouter/v1
