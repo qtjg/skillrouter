@@ -155,6 +155,7 @@ export const findCommand: CommandDef = {
         installed,
         agents,
         config: app.config,
+        metrics: new Map((await app.storage.allMetrics()).map((m) => [m.capabilityId, m])),
       };
       const decision = await new Router().route(routeCtx);
       const top = decision.scores.filter((s) => s.score >= 20).slice(0, 10);

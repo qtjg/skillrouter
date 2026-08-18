@@ -51,6 +51,15 @@ export interface RouterCacheRow {
   ts: string;
 }
 
+/** Dynamic reliability observations for a capability (PRD §22). */
+export interface MetricsRow {
+  capabilityId: string;
+  tasks: number;
+  successes: number;
+  failures: number;
+  lastUpdated: string;
+}
+
 export interface Storage {
   /** Directory that contains the database and other runtime state. */
   readonly dataDir: string;
@@ -84,6 +93,10 @@ export interface Storage {
 
   getRouterCache(key: string): Promise<string | null>;
   setRouterCache(key: string, value: string): Promise<void>;
+
+  getMetrics(capabilityId: string): Promise<MetricsRow | null>;
+  setMetrics(metrics: MetricsRow): Promise<void>;
+  allMetrics(): Promise<MetricsRow[]>;
 }
 
 export function installedAgentsJson(agents: string[]): string {

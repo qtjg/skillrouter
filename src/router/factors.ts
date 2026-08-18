@@ -174,12 +174,19 @@ export function scoreSingleCapability(
   else if (trust === "blocked") add("trust", -100, "blocked capability");
   else add("trust", W.trustUnknown, "publisher is unverified");
 
-  // --- Quality & history (declared metadata in V0.1) ---
+  // --- Quality & history ---
   const quality = capability.metadata?.quality;
   if (quality !== undefined) add("quality", (quality / 100) * W.qualityFactor, `declared quality ${quality}/100`);
 
-  const successRate = capability.metadata?.successRate;
-  if (successRate !== undefined) add("historical", (successRate / 100) * W.historicalFactor, `historical success rate ${successRate}%`);
+  // --- Historical: fresh dynamic metrics win; declared successRate is the fallback ---
+  const metric = ctx.metrics?.get(capability.id);
+  if (metric && metric.tasks > 0) {
+    const rate = metric.successes / metric.tasks;
+    const rounded = Math.round(rate * 1000) / 1000;
+    add("historical", rounded * W.historicalFactor, `historical success rate ${(rate * 100).toFixed(0)}% (${metric.tasks} observations)`);
+  } else if (capability.metadata?.successRate !== undefined) {
+    add("historical", (capability.metadata.successRate / 100) * W.historicalFactor, `declared success rate ${capability.metadata.successRate}%`);
+  }
 
   // --- Penalties ---
   const estimatedTokens = capability.context?.estimatedTokens ?? 0;

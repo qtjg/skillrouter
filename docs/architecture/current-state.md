@@ -108,6 +108,16 @@ Unfinished features are marked as such; nothing here overstates what exists.
 8. CI workflow running typecheck + tests on Node 22.
 9. MCP server mode and programmatic API for agent consumption.
 10. Route modes (fast/balanced/deep/secure) with locked behavior.
+11. Interactive CLI, `graph`/`trace`/`import`/`plugin` commands.
+12. Workflows, bundles and the HTTP API (`serve`).
+
+## 6. Reliability & learning (PRD §22–23)
+
+The metrics pipeline is live: `skill_metrics` storage (migration 2), bounded
+update policy (halving beyond 1000 observations), `ReliabilityEngine.record`,
+the `historical` scoring factor (fresh observations override declared rates),
+and the `stats` CLI command. `learn` (fallback-aware outcome recording),
+failure recovery and routing strategies are next (see gap-analysis.md).
 
 ## 5. Roadmap (milestones — deliberate order)
 

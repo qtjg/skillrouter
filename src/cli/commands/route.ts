@@ -41,7 +41,7 @@ export const routeCommand: CommandDef = {
       const installed = new Map((await app.storage.allInstalled()).map((i) => [i.id, i]));
       const agents = await detectAgentIds(app);
 
-      const routeCtx: RouteContext = { task, cwd: app.cwd, project, git, capabilities, installed, agents, config: app.config };
+      const routeCtx: RouteContext = { task, cwd: app.cwd, project, git, capabilities, installed, agents, config: app.config, metrics: new Map((await app.storage.allMetrics()).map((m) => [m.capabilityId, m])) };
       const decision = await new Router().route(routeCtx);
 
       const dryRun = Boolean(ctx.flags["dry-run"]) || app.config.router.mode === "manual";

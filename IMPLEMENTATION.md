@@ -116,6 +116,16 @@ Legend: `[x]` done, `[~]` partial, `[ ]` pending.
 - [x] Context engine (normalized snapshot from parallel, fault-tolerant collectors)
 - [x] Manifest relations (`enhances`, `replaces`, `compatibleWith`) in types, validator and schema
 
+## Phase 7 — Reliability & Learning (PRD §22–23)
+
+- [x] `skill_metrics` storage (bounded observations via halving beyond 1000)
+- [x] ReliabilityEngine (record outcomes, fresh rates, typed events)
+- [x] `historical` scoring factor consumes fresh metrics (declared rate as fallback)
+- [x] `stats` CLI command (table + JSON)
+- [ ] Failure recovery & fallback chains (PRD §21)
+- [ ] `learn` outcome recording command
+- [ ] Routing strategies (balanced/quality/speed/cheap/minimal/safe) + cost/latency metadata
+
 ## Future (documented, not built in V0.1)
 
 - Runtime daemon (`skillrouter daemon`)

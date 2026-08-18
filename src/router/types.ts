@@ -2,6 +2,7 @@ import type { Capability, Compatibility, NormalizedQuery, RiskLevel, TrustLevel 
 import type { ProjectAnalysis } from "../project/analyzer.ts";
 import type { GitContext } from "../git/context.ts";
 import type { InstalledCapabilityRow } from "../storage/types.ts";
+import type { MetricsRow } from "../storage/types.ts";
 import type { SkillRouterConfig } from "../config/config.ts";
 import type { AgentId } from "../core/types.ts";
 
@@ -87,6 +88,8 @@ export interface RouteContext {
   installed: Map<string, InstalledCapabilityRow>;
   agents: AgentId[];
   config: SkillRouterConfig;
+  /** Fresh reliability observations; when present they override declared successRate. */
+  metrics?: Map<string, MetricsRow>;
 }
 
 export interface SemanticResult {

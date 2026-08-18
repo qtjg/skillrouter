@@ -45,7 +45,7 @@ Every capability is scored deterministically as a weighted sum of independent fa
 
 - **Context cost:** `min(contextPenaltyCap, estimatedTokens / 1000 * contextPenaltyPerK)` — i.e. 3 points per 1000 estimated tokens, capped at 9.
 - **Permission cost:** `(risk.score / 100) * permissionPenalty` — the risk engine's 0–100 score scales 12 points. Only positive scores penalize.
-- **Quality/history:** declared `metadata.quality` and `metadata.successRate` (0–100) add their fraction of 8 points each — these are declared metadata values in v0.1, not measured history.
+- **Quality/history:** declared `metadata.quality` adds its fraction of 8 points. History: **fresh reliability observations** (storage `skill_metrics`, recorded via `skillrouter learn` or the ReliabilityEngine) override declared `metadata.successRate`. The factor is the observed success rate × 8; a capability without observations falls back to the declared rate, and to zero when neither exists. Observations are bounded (see learning/metrics.ts), so a few executions cannot distort ranking.
 
 Signals are kept per factor (`Signal {type, text, weight}`) and feed `skillrouter explain`, so every point in a score is attributable.
 

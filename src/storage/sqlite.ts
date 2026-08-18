@@ -3,7 +3,7 @@ import { dirname } from "node:path";
 import type { Capability, CapabilityState, TrustLevel } from "../core/types.ts";
 import { ensureDir } from "../utils/fs.ts";
 import { SkillRouterError } from "../utils/errors.ts";
-import { installedAgentsJson, parseAgentsJson, type Storage, type InstalledCapabilityRow, type RoutingHistoryRow, type AuditRow, type PreferenceRow, type TrustRow, type RouterCacheRow } from "./types.ts";
+import { installedAgentsJson, parseAgentsJson, type Storage, type InstalledCapabilityRow, type RoutingHistoryRow, type AuditRow, type PreferenceRow, type TrustRow, type RouterCacheRow, type MetricsRow } from "./types.ts";
 
 function toHistoryRow(raw: Record<string, unknown>): RoutingHistoryRow {
   return {
@@ -101,6 +101,17 @@ const MIGRATIONS: string[] = [
     value TEXT NOT NULL,
     ts TEXT NOT NULL
   );
+  `,
+  // migration 2: reliability metrics (PRD §22)
+  `
+  CREATE TABLE skill_metrics (
+    capability_id TEXT PRIMARY KEY,
+    tasks INTEGER NOT NULL DEFAULT 0,
+    successes INTEGER NOT NULL DEFAULT 0,
+    failures INTEGER NOT NULL DEFAULT 0,
+    last_updated TEXT NOT NULL
+  );
+  CREATE INDEX idx_skill_metrics_tasks ON skill_metrics(tasks);
   `,
 ];
 
@@ -313,5 +324,39 @@ export class SqliteStorage implements Storage {
     this.connection
       .prepare(`INSERT INTO router_cache (key, value, ts) VALUES (?, ?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value, ts = excluded.ts`)
       .run(key, value, new Date().toISOString());
+  }
+
+  async getMetrics(capabilityId: string): Promise<MetricsRow | null> {
+    const row = this.connection.prepare("SELECT * FROM skill_metrics WHERE capability_id = ?").get(capabilityId) as Record<string, unknown> | undefined;
+    if (!row) return null;
+    return {
+      capabilityId: String(row.capability_id),
+      tasks: Number(row.tasks),
+      successes: Number(row.successes),
+      failures: Number(row.failures),
+      lastUpdated: String(row.last_updated),
+    };
+  }
+
+  async setMetrics(metrics: MetricsRow): Promise<void> {
+    this.connection
+      .prepare(
+        `INSERT INTO skill_metrics (capability_id, tasks, successes, failures, last_updated)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(capability_id) DO UPDATE SET tasks = excluded.tasks, successes = excluded.successes,
+           failures = excluded.failures, last_updated = excluded.last_updated`,
+      )
+      .run(metrics.capabilityId, metrics.tasks, metrics.successes, metrics.failures, metrics.lastUpdated);
+  }
+
+  async allMetrics(): Promise<MetricsRow[]> {
+    const rows = this.connection.prepare("SELECT * FROM skill_metrics ORDER BY capability_id").all() as unknown as Array<Record<string, unknown>>;
+    return rows.map((row) => ({
+      capabilityId: String(row.capability_id),
+      tasks: Number(row.tasks),
+      successes: Number(row.successes),
+      failures: Number(row.failures),
+      lastUpdated: String(row.last_updated),
+    }));
   }
 }

@@ -113,3 +113,21 @@ test("main route --json --dry-run returns a machine-readable decision", async ()
     }
   });
 });
+
+test("main stats reports reliability observations in table and json mode", async () => {
+  await withCleanEnv(async () => {
+    capture();
+    try {
+      let code = await main(["stats"]);
+      assert.equal(code, 0);
+      assert.match(captured.out, /No reliability statistics yet/);
+
+      capture();
+      code = await main(["stats", "--json"]);
+      assert.equal(code, 0);
+      assert.deepEqual(JSON.parse(captured.out), { capabilities: [] });
+    } finally {
+      release();
+    }
+  });
+});
