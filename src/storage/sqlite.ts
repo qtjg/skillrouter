@@ -5,6 +5,20 @@ import { ensureDir } from "../utils/fs.ts";
 import { SkillRouterError } from "../utils/errors.ts";
 import { installedAgentsJson, parseAgentsJson, type Storage, type InstalledCapabilityRow, type RoutingHistoryRow, type AuditRow, type PreferenceRow, type TrustRow, type RouterCacheRow } from "./types.ts";
 
+function toInstalledRow(raw: Record<string, unknown>): InstalledCapabilityRow {
+  return {
+    id: String(raw.id),
+    version: String(raw.version),
+    state: raw.state as CapabilityState,
+    installRoot: (raw.install_root as string | null) ?? null,
+    agents: parseAgentsJson(raw.agents as string),
+    installedAt: String(raw.installed_at),
+    updatedAt: String(raw.updated_at),
+    sourceType: (raw.source_type as string | null) ?? null,
+    sourceLocation: (raw.source_location as string | null) ?? null,
+  };
+}
+
 const MIGRATIONS: string[] = [
   // migration 1: initial schema
   `
@@ -154,13 +168,13 @@ export class SqliteStorage implements Storage {
   }
 
   async getInstalled(id: string): Promise<InstalledCapabilityRow | null> {
-    const row = this.connection.prepare("SELECT * FROM installed WHERE id = ?").get(id) as unknown as InstalledCapabilityRow | undefined;
+    const row = this.connection.prepare("SELECT * FROM installed WHERE id = ?").get(id);
     if (!row) return null;
-    return { ...row, agents: parseAgentsJson(row.agents as unknown as string) };
+    return toInstalledRow(row as Record<string, unknown>);
   }
 
   async setInstalledState(id: string, state: CapabilityState, patch: Partial<InstalledCapabilityRow>): Promise<void> {
-    const existing = this.connection.prepare("SELECT * FROM installed WHERE id = ?").get(id) as InstalledCapabilityRow | undefined;
+    const existing = this.connection.prepare("SELECT * FROM installed WHERE id = ?").get(id) as Record<string, unknown> | undefined;
     const now = new Date().toISOString();
     if (!existing) {
       this.connection
@@ -186,20 +200,20 @@ export class SqliteStorage implements Storage {
         `UPDATE installed SET version = ?, state = ?, install_root = ?, agents = ?, updated_at = ?, source_type = ?, source_location = ? WHERE id = ?`,
       )
       .run(
-        patch.version ?? existing.version,
+        patch.version ?? (existing.version as string),
         state,
-        patch.installRoot ?? existing.installRoot,
-        installedAgentsJson(patch.agents ?? existing.agents),
+        patch.installRoot ?? (existing.install_root as string | null) ?? null,
+        installedAgentsJson(patch.agents ?? parseAgentsJson(existing.agents as string)),
         now,
-        patch.sourceType ?? existing.sourceType,
-        patch.sourceLocation ?? existing.sourceLocation,
+        patch.sourceType ?? (existing.source_type as string | null) ?? null,
+        patch.sourceLocation ?? (existing.source_location as string | null) ?? null,
         id,
       );
   }
 
   async allInstalled(): Promise<InstalledCapabilityRow[]> {
-    const rows = this.connection.prepare("SELECT * FROM installed ORDER BY id").all() as unknown as InstalledCapabilityRow[];
-    return rows.map((r) => ({ ...r, agents: parseAgentsJson(r.agents as unknown as string) }));
+    const rows = this.connection.prepare("SELECT * FROM installed ORDER BY id").all();
+    return rows.map((row) => toInstalledRow(row as Record<string, unknown>));
   }
 
   async getHistory(filter: { task?: string; limit?: number } = {}): Promise<RoutingHistoryRow[]> {
