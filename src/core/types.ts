@@ -173,6 +173,9 @@ export interface Capability {
   compatibility: CompatibilityMap;
   dependencies?: Dependency[];
   conflicts?: string[];
+  enhances?: string[];
+  replaces?: string[];
+  compatibleWith?: string[];
   permissions?: PermissionSet;
   risk?: RiskProfile;
   context?: ContextProfile;

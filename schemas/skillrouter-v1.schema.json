@@ -96,6 +96,21 @@
       "items": { "type": "string" },
       "description": "Capability ids this capability conflicts with; the router resolves these pairs."
     },
+    "enhances": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Capability ids this capability augments (additive relationship used for graph clustering)."
+    },
+    "replaces": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Capability ids this capability supersedes; used for replacement discovery."
+    },
+    "compatibleWith": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Environment or ecosystem names (e.g. linux, docker, nextjs) this capability is compatible with."
+    },
     "permissions": {
       "type": "object",
       "description": "Declared permission surface. Drives risk scoring and consent.",
