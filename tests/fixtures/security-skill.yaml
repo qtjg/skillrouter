@@ -1,0 +1,51 @@
+schema: skillrouter/v1
+id: security-auditor
+name: Security Auditor
+version: 2.1.0
+description: Reviews code and dependencies for vulnerabilities, insecure patterns, and exposed credentials.
+type: skill
+capabilities:
+  - scan-dependencies
+  - scan-source-for-secrets
+  - produce-security-report
+triggers:
+  keywords:
+    - audit
+    - vulnerability
+    - cve
+    - secrets
+    - security
+  technologies:
+    - security
+  intents:
+    - "audit security"
+    - "check for vulnerabilities"
+    - "find hardcoded secrets"
+compatibility:
+  opencode: native
+  claude: native
+  gemini: adaptable
+permissions:
+  filesystem:
+    read: true
+    write: false
+  network:
+    allowed:
+      - nvd.nist.gov
+      - api.osv.dev
+risk:
+  level: medium
+dependencies:
+  - dependency-checker
+  - id: report-writer
+    version: ">=1.0.0"
+    optional: true
+context:
+  estimatedTokens: 3500
+metadata:
+  categories:
+    - security
+  tags:
+    - audit
+    - supply-chain
+  license: Apache-2.0

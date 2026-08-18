@@ -1,0 +1,55 @@
+schema: skillrouter/v1
+id: docker-deployer
+name: Docker Deployer
+version: 3.0.1
+description: Builds containers, runs them locally, and pushes images to a registry for deployment.
+type: workflow
+capabilities:
+  - build-image
+  - run-container
+  - push-image
+triggers:
+  keywords:
+    - docker
+    - deploy
+    - container
+    - image
+  technologies:
+    - docker
+    - kubernetes
+  intents:
+    - "build a docker image"
+    - "deploy with docker"
+  gitPatterns:
+    - "**/Dockerfile*"
+    - "**/docker-compose*"
+compatibility:
+  opencode: adaptable
+  generic: native
+permissions:
+  filesystem:
+    read: true
+    write: true
+  shell:
+    enabled: true
+    allow:
+      - docker build
+      - docker run
+      - docker push
+      - docker tag
+  network:
+    allowed:
+      - registry-1.docker.io
+      - auth.docker.io
+risk:
+  level: high
+context:
+  estimatedTokens: 3000
+  activationLevel: 4
+metadata:
+  categories:
+    - deployment
+  tags:
+    - docker
+    - devops
+  quality: 80

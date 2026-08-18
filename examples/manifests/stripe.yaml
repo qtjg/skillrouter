@@ -1,0 +1,79 @@
+# Stripe Billing Expert - example capability manifest
+# Schema: skillrouter/v1 (see src/manifest/validate.ts).
+# id must match ^[a-z0-9][a-z0-9-]*$ (max 64 chars); version must be semver;
+# type must be one of the capability types in src/core/types.ts.
+
+schema: skillrouter/v1
+id: stripe-billing-expert
+name: Stripe Billing Expert
+version: 1.0.0
+description: Stripe billing and invoicing specialist - subscription plans, usage-based billing, invoices and credit notes, dunning workflows for failed payments, and reconciliation of Stripe webhook events.
+type: tool
+capabilities:
+  - configure-subscription-plans
+  - create-invoice
+  - issue-credit-note
+  - run-dunning-workflow
+  - handle-webhook-events
+triggers:
+  keywords:
+    - stripe
+    - billing
+    - invoice
+    - subscription
+    - dunning
+    - refund
+    - payment
+  intents:
+    - "set up stripe billing"
+    - "create an invoice"
+    - "handle failed payments"
+    - "configure subscription plans"
+    - "build a dunning workflow"
+  technologies:
+    - stripe
+    - webhook
+compatibility:
+  opencode: native
+  gemini: compatible
+  claude: compatible
+  generic: adaptable
+permissions:
+  filesystem:
+    read: true
+    write: false
+  network:
+    allowed:
+      - api.stripe.com
+      - hooks.stripe.com
+  environment:
+    read: true
+    variables:
+      - STRIPE_SECRET_KEY
+risk:
+  level: low
+  score: 15
+  reasons:
+    - "reads billing code and templates only, never writes files"
+    - "network access restricted to the Stripe API and webhook endpoints"
+    - "reads the STRIPE_SECRET_KEY environment variable only for API calls"
+context:
+  estimatedTokens: 2600
+  activationLevel: 2
+  resources:
+    - "billing/"
+metadata:
+  author: SkillRouter Examples
+  license: MIT
+  repository: https://github.com/example/skillrouter-examples
+  categories:
+    - payments
+    - billing
+  tags:
+    - stripe
+    - invoicing
+    - subscriptions
+    - webhooks
+resources:
+  - "billing/"
+  - "docs/billing.md"

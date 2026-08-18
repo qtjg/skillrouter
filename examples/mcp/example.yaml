@@ -1,0 +1,74 @@
+# Database Query Assistant - example MCP server capability manifest
+#
+# Schema: skillrouter/v1 (see src/manifest/validate.ts).
+# Note: capabilities of type "mcp-server" are exposed through the MCP
+# adapter (src/adapters/mcp.ts), not through a generic skill adapter.
+# The capability payload should contain the server implementation; on
+# install the adapter registers the server entry in the project's
+# .mcp.json (falling back to ~/.config/mcp.json) and enable/disable
+# toggles the server's disabled flag.
+
+schema: skillrouter/v1
+id: mcp-db-assistant
+name: Database Query Assistant (MCP)
+version: 1.0.0
+description: Read-only database assistant exposed over the Model Context Protocol - schema inspection, safe query suggestions, and query plan explanations for local databases.
+type: mcp-server
+capabilities:
+  - inspect-database-schema
+  - suggest-optimized-queries
+  - explain-query-plans
+triggers:
+  keywords:
+    - database
+    - sql
+    - query
+    - schema
+    - index
+  intents:
+    - "explain this query"
+    - "inspect the database schema"
+    - "suggest a faster query"
+  technologies:
+    - postgresql
+    - mysql
+    - sqlite
+compatibility:
+  mcp: native
+  opencode: adaptable
+  gemini: compatible
+  claude: compatible
+  generic: adaptable
+permissions:
+  mcp:
+    servers:
+      - db-assistant
+  filesystem:
+    read: true
+    write: false
+  network:
+    allowed:
+      - localhost
+risk:
+  level: medium
+  score: 40
+  reasons:
+    - "exposes a local MCP server endpoint"
+    - "restricted to read-only database introspection"
+    - "only reachable on localhost"
+context:
+  estimatedTokens: 1500
+  activationLevel: 2
+  resources:
+    - "server/"
+metadata:
+  author: SkillRouter Examples
+  license: MIT
+  categories:
+    - database
+  tags:
+    - mcp
+    - sql
+resources:
+  - "server/"
+  - "docs/query-assistant.md"

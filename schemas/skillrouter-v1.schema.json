@@ -1,0 +1,233 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://skillrouter.dev/schemas/skillrouter-v1.schema.json",
+  "title": "SkillRouter capability manifest (skillrouter/v1)",
+  "description": "A universal capability manifest: one canonical description of a skill, plugin, tool, or MCP server that any AI agent can consume. Validated against the same rules implemented in src/manifest/validate.ts.",
+  "type": "object",
+  "required": ["schema", "id", "name", "version", "description", "type"],
+  "additionalProperties": true,
+  "properties": {
+    "schema": {
+      "type": "string",
+      "enum": ["skillrouter/v1"],
+      "description": "Manifest schema version. Only skillrouter/v1 is supported."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]*$",
+      "maxLength": 64,
+      "description": "Unique, stable identifier. Lowercase letters, digits and dashes only."
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Human-readable name."
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^v?[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z-.]+)?$",
+      "description": "SemVer version (v-prefix tolerated)."
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1,
+      "description": "What this capability does, in plain language."
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "skill", "plugin", "mcp-server", "command", "hook", "agent",
+        "sub-agent", "context", "template", "script", "extension",
+        "tool", "workflow", "adapter"
+      ],
+      "description": "Capability kind."
+    },
+    "capabilities": {
+      "oneOf": [
+        { "type": "string" },
+        {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      ],
+      "description": "Actions or sub-capabilities this capability provides."
+    },
+    "triggers": {
+      "type": "object",
+      "description": "When the router should pay attention to this capability.",
+      "properties": {
+        "keywords": { "type": "array", "items": { "type": "string" } },
+        "intents": { "type": "array", "items": { "type": "string" } },
+        "technologies": { "type": "array", "items": { "type": "string" } },
+        "filePatterns": { "type": "array", "items": { "type": "string" } },
+        "gitPatterns": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "compatibility": {
+      "type": "object",
+      "description": "Per-agent compatibility level. Unknown agents are treated as adaptable.",
+      "additionalProperties": {
+        "type": "string",
+        "enum": ["native", "compatible", "adaptable", "unsupported"]
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "Other capabilities this one needs (required or optional).",
+      "items": {
+        "oneOf": [
+          { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+          {
+            "type": "object",
+            "required": ["id"],
+            "properties": {
+              "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$" },
+              "version": { "type": "string" },
+              "optional": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "conflicts": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Capability ids this capability conflicts with; the router resolves these pairs."
+    },
+    "permissions": {
+      "type": "object",
+      "description": "Declared permission surface. Drives risk scoring and consent.",
+      "properties": {
+        "filesystem": {
+          "type": "object",
+          "properties": {
+            "read": { "type": "boolean" },
+            "write": { "type": "boolean" },
+            "paths": { "type": "array", "items": { "type": "string" } }
+          },
+          "additionalProperties": false
+        },
+        "network": {
+          "type": "object",
+          "properties": {
+            "allowed": { "type": "array", "items": { "type": "string" } },
+            "deny": { "type": "array", "items": { "type": "string" } }
+          },
+          "additionalProperties": false,
+          "description": "allowed: hostnames or \"*\"; a bare \"*\" requires explicit review."
+        },
+        "shell": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "allow": { "type": "array", "items": { "type": "string" } },
+            "deny": { "type": "array", "items": { "type": "string" } }
+          },
+          "additionalProperties": false
+        },
+        "environment": {
+          "type": "object",
+          "properties": {
+            "read": { "type": "boolean" },
+            "variables": { "type": "array", "items": { "type": "string" } }
+          },
+          "additionalProperties": false
+        },
+        "credentials": {
+          "type": "object",
+          "properties": {
+            "access": { "type": "string", "enum": ["none", "explicit", "requested"] },
+            "allowed": { "type": "array", "items": { "type": "string" } }
+          },
+          "additionalProperties": false
+        },
+        "hooks": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "events": { "type": "array", "items": { "type": "string" } }
+          },
+          "additionalProperties": false
+        },
+        "mcp": {
+          "type": "object",
+          "properties": {
+            "servers": { "type": "array", "items": { "type": "string" } }
+          },
+          "additionalProperties": false
+        },
+        "processes": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "allow": { "type": "array", "items": { "type": "string" } }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "risk": {
+      "type": "object",
+      "description": "Optional declared risk. The engine computes its own floor from permissions; declared level only raises it.",
+      "properties": {
+        "level": { "type": "string", "enum": ["low", "medium", "high", "critical"] },
+        "score": { "type": "number", "minimum": 0, "maximum": 100 },
+        "reasons": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "context": {
+      "type": "object",
+      "description": "Estimated usage cost so the router can budget context window use.",
+      "properties": {
+        "estimatedTokens": { "type": "number", "minimum": 0 },
+        "activationLevel": { "type": "number", "minimum": 0, "maximum": 5 },
+        "resources": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Publisher and catalog metadata.",
+      "properties": {
+        "categories": { "type": "array", "items": { "type": "string" } },
+        "tags": { "type": "array", "items": { "type": "string" } },
+        "license": { "type": "string" },
+        "author": { "type": "string" },
+        "repository": { "type": "string" },
+        "homepage": { "type": "string" },
+        "quality": { "type": "number", "minimum": 0, "maximum": 100 },
+        "popularity": { "type": "number", "minimum": 0, "maximum": 100 },
+        "successRate": { "type": "number", "minimum": 0, "maximum": 100 }
+      },
+      "additionalProperties": false
+    },
+    "resources": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Payload directories/files shipped with the capability."
+    },
+    "trust": {
+      "type": "string",
+      "enum": ["verified", "trusted", "community", "unknown", "blocked"],
+      "description": "Publisher trust level. Defaults to unknown; trusting happens out-of-band."
+    },
+    "signature": {
+      "type": "object",
+      "description": "Signature block added by `skillrouter sign` at publish time.",
+      "properties": {
+        "algorithm": { "type": "string", "enum": ["sr-v1-ecdsa-p256"] },
+        "publicKey": { "type": "string" },
+        "fingerprint": { "type": "string" },
+        "signature": { "type": "string" },
+        "manifestHash": { "type": "string" },
+        "signedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["algorithm", "publicKey", "fingerprint", "signature", "manifestHash", "signedAt"],
+      "additionalProperties": false
+    }
+  }
+}

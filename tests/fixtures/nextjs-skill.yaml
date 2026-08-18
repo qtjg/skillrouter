@@ -1,0 +1,43 @@
+schema: skillrouter/v1
+id: nextjs-optimizer
+name: Next.js Optimizer
+version: 0.9.0
+description: Analyzes Next.js pages and components for performance issues and suggests improvements.
+type: plugin
+capabilities:
+  - analyze-page-performance
+  - suggest-code-splitting
+  - audit-framework-upgrades
+triggers:
+  keywords:
+    - nextjs
+    - performance
+    - code-splitting
+  technologies:
+    - nextjs
+    - react
+  intents:
+    - "optimize next.js app"
+    - "improve page performance"
+  filePatterns:
+    - "**/*.tsx"
+    - "app/**"
+    - "pages/**"
+compatibility:
+  opencode: native
+  gemini: compatible
+permissions:
+  filesystem:
+    read: true
+    write: false
+risk:
+  level: low
+context:
+  estimatedTokens: 1500
+  activationLevel: 2
+metadata:
+  categories:
+    - frontend
+  tags:
+    - nextjs
+    - performance

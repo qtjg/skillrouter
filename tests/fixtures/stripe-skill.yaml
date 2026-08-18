@@ -1,0 +1,54 @@
+schema: skillrouter/v1
+id: stripe-payments
+name: Stripe Payments
+version: 1.2.0
+description: Handles Stripe checkout flows, webhook verification, refunds, and subscription management.
+type: skill
+capabilities:
+  - create-checkout-session
+  - verify-webhook
+  - process-refund
+  - manage-subscription
+triggers:
+  keywords:
+    - payments
+    - checkout
+    - refund
+    - subscription
+    - billing
+  technologies:
+    - stripe
+  intents:
+    - "implement stripe checkout"
+    - "handle stripe webhooks"
+    - "refund a payment"
+compatibility:
+  opencode: native
+  gemini: compatible
+  claude: compatible
+  generic: adaptable
+permissions:
+  filesystem:
+    read: true
+    write: false
+  network:
+    allowed:
+      - api.stripe.com
+risk:
+  level: low
+context:
+  estimatedTokens: 2000
+  activationLevel: 2
+  resources:
+    - webhooks/
+metadata:
+  categories:
+    - payments
+  tags:
+    - stripe
+    - payments
+    - webhooks
+  license: MIT
+  author: SkillRouter Examples
+resources:
+  - webhooks/

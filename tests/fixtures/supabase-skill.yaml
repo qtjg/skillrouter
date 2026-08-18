@@ -1,0 +1,45 @@
+schema: skillrouter/v1
+id: supabase-helper
+name: Supabase Helper
+version: 1.4.2
+description: Scaffolds Supabase schemas, policies, and client code with Row Level Security and migrations.
+type: skill
+capabilities:
+  - scaffold-schema
+  - write-rls-policies
+  - generate-client-collections
+triggers:
+  keywords:
+    - supabase
+    - rls
+    - postgres
+  technologies:
+    - supabase
+    - postgresql
+  intents:
+    - "set up supabase"
+    - "write row level security"
+compatibility:
+  opencode: native
+  gemini: compatible
+  claude: compatible
+permissions:
+  filesystem:
+    read: true
+    write: true
+  network:
+    allowed:
+      - api.supabase.co
+risk:
+  level: medium
+dependencies:
+  - pg-migrator
+context:
+  estimatedTokens: 2200
+metadata:
+  categories:
+    - database
+  tags:
+    - supabase
+    - postgresql
+  license: MIT

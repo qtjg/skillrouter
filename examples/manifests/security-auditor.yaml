@@ -1,0 +1,74 @@
+# Dependency Vulnerability Scanner - example capability manifest
+# Schema: skillrouter/v1 (see src/manifest/validate.ts). This is a skill
+# (a prompt/plan instruction set for agents), not a plugin or tool.
+
+schema: skillrouter/v1
+id: dependency-vulnerability-scanner
+name: Dependency Vulnerability Scanner
+version: 1.0.0
+description: Scans project dependencies and lockfiles against the NVD and OSV vulnerability feeds, flags known CVEs, license issues, and supply-chain risk, and summarizes findings for humans.
+type: skill
+capabilities:
+  - scan-lockfiles-for-cves
+  - check-osv-advisories
+  - detect-license-risks
+  - summarize-supply-chain-risk
+triggers:
+  keywords:
+    - vulnerability
+    - cve
+    - osv
+    - dependency
+    - lockfile
+    - supply-chain
+    - sbom
+  intents:
+    - "scan dependencies for vulnerabilities"
+    - "check for known CVEs"
+    - "audit my supply chain"
+    - "is this dependency safe"
+  technologies:
+    - npm
+    - python
+    - rust
+compatibility:
+  opencode: native
+  claude: native
+  gemini: adaptable
+  generic: compatible
+permissions:
+  filesystem:
+    read: true
+    write: false
+  network:
+    allowed:
+      - nvd.nist.gov
+      - api.osv.dev
+risk:
+  level: medium
+  score: 42
+  reasons:
+    - "queries public CVE databases over the network"
+    - "reads dependency manifests and lockfiles only"
+    - "writes nothing; findings require human review and action"
+context:
+  estimatedTokens: 2800
+  activationLevel: 1
+dependencies:
+  - id: report-writer
+    optional: true
+trust: unknown
+metadata:
+  author: SkillRouter Examples
+  license: MIT
+  repository: https://github.com/example/skillrouter-examples
+  categories:
+    - security
+    - supply-chain
+  tags:
+    - cve
+    - osv
+    - auditing
+resources:
+  - "package-lock.json"
+  - "pnpm-lock.yaml"
