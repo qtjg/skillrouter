@@ -19,8 +19,9 @@ export function resolveConflicts(scores: CapabilityScore[]): CapabilityScore[] {
         const opponent = sorted.find((s) => s.capability.id === conflictId && !excluded.has(conflictId) && s.capability.id !== score.capability.id);
         if (opponent) {
           if (opponent.score > score.score || (opponent.score === score.score && score.riskLevel > opponent.riskLevel)) {
-            excluded.add(conflictId);
-            conflictMap.set(conflictId, score.capability.id);
+            // The conflicting partner is stronger: drop the current capability.
+            excluded.add(score.capability.id);
+            conflictMap.set(score.capability.id, opponent.capability.id);
           } else {
             // Keep current score; exclude opponent instead.
             excluded.add(opponent.capability.id);
