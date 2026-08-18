@@ -30,7 +30,7 @@ export async function verifyInstallChain(storage: Storage, capabilityIds: string
     if (verified.valid) {
       results.push({ capabilityId: id, status: "valid", publicKeyFingerprint: verified.fingerprint });
     } else if (verified.reason === "unsigned") {
-      results.push({ capabilityId: id, status: "unsigned", reason: localPublic ? "unsigned (no local keypair expected)" : "unsigned" });
+      results.push({ capabilityId: id, status: "unsigned", reason: localPublic ? "unsigned" : "unsigned (no local keypair expected)" });
     } else {
       results.push({ capabilityId: id, status: "invalid", reason: "signature mismatch" });
     }
