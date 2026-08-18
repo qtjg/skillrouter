@@ -110,11 +110,16 @@ Legend: `[x]` done, `[~]` partial, `[ ]` pending.
 - [~] Lock versions
 - [~] Reproduce configuration on another machine
 
+## M1 — Context & Graph Foundation
+
+- [x] Capability graph (requires/conflicts/enhances/replaces/compatibleWith edges, transitive traversal, clustering, validation)
+- [x] Context engine (normalized snapshot from parallel, fault-tolerant collectors)
+- [x] Manifest relations (`enhances`, `replaces`, `compatibleWith`) in types, validator and schema
+
 ## Future (documented, not built in V0.1)
 
 - Runtime daemon (`skillrouter daemon`)
 - Embedding-based semantic matching (interface stubbed)
-- Capability graph
 - Learning system (history storage exists; ranking signals stubbed)
 - Publishing / registry API / marketplace
 - Sandboxing
