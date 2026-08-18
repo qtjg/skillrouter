@@ -215,6 +215,7 @@ export async function unsetConfigValue(path: string, cwd = process.cwd()): Promi
 
 export async function writeProjectConfig(cwd: string, config: SkillRouterConfig): Promise<string> {
   const configPath = join(cwd, "skillrouter.yaml");
+  await mkdir(cwd, { recursive: true });
   await writeFile(configPath, stringify(config, { indent: 2 }) + "\n", "utf8");
   return configPath;
 }
