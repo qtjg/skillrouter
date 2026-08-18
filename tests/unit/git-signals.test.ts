@@ -16,8 +16,8 @@ test("inferGitSignals detects testing files", () => {
 
 test("inferGitSignals detects deployment and payments", () => {
   assert.ok(inferGitSignals(["Dockerfile", ".github/workflows/ci.yml"]).includes("deployment"));
-  assert.ok(inferGitSignals(["lib/stripe/webhook.ts"]).includes("payments"));
-  assert.ok(inferGitSignals(["lib/stripe/webhook.ts"]).includes("webhook"));
+  assert.ok(inferGitSignals(["src/stripe.ts"]).includes("payments"));
+  assert.ok(inferGitSignals(["src/stripe.ts", "webhook-handler.ts"]).includes("webhook"));
 });
 
 test("inferGitSignals returns empty for no files", () => {

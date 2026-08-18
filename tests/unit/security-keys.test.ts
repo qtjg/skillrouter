@@ -108,7 +108,7 @@ test("signManifest returns null when no keypair exists", async () => {
   }
 });
 
-test("verifyInstallChain reports valid, unsigned, and not-installed states", async () => {
+test("verifyInstallChain reports not-installed, unsigned, and valid states", async () => {
   const dir = await mkdtemp(join(tmpdir(), "sr-chain-"));
   const storage = new SqliteStorage(join(dir, "state", "sr.db"));
   try {
@@ -116,8 +116,14 @@ test("verifyInstallChain reports valid, unsigned, and not-installed states", asy
     const cap = tickCapability("chain-cap");
     await storage.upsertCapability(cap);
 
+    const notInstalled = await verifyInstallChain(storage, ["chain-cap"]);
+    assert.equal(notInstalled[0]?.status, "unsigned");
+    assert.equal(notInstalled[0]?.reason, "not installed");
+
+    await storage.setInstalledState("chain-cap", "ENABLED", { id: "chain-cap", version: "1.0.0", installRoot: dir, agents: [] });
     const noKey = await verifyInstallChain(storage, ["chain-cap"]);
-    assert.deepEqual(noKey[0], { capabilityId: "chain-cap", status: "unsigned", reason: "unsigned (no local keypair expected)" });
+    assert.equal(noKey[0]?.status, "unsigned");
+    assert.equal(noKey[0]?.reason, "unsigned (no local keypair expected)");
 
     await generateKeyPair(storage);
     const manifestPath = join(dir, "chain-cap.json");
@@ -125,14 +131,14 @@ test("verifyInstallChain reports valid, unsigned, and not-installed states", asy
     await signManifest(manifestPath, storage);
     const signed = JSON.parse(await (await import("node:fs/promises")).readFile(manifestPath, "utf8")) as Capability;
     await storage.upsertCapability(signed);
-    await storage.setInstalledState("chain-cap", "ENABLED", { id: "chain-cap", version: "1.0.0", installRoot: dir, agents: [] });
 
     const results = await verifyInstallChain(storage, ["chain-cap"]);
     assert.equal(results[0]?.status, "valid");
+    assert.ok(results[0]?.publicKeyFingerprint);
 
-    const notInstalled = await verifyInstallChain(storage, ["ghost-cap"]);
-    assert.equal(notInstalled[0]?.status, "unsigned");
-    assert.equal(notInstalled[0]?.reason, "not installed");
+    const ghost = await verifyInstallChain(storage, ["ghost-cap"]);
+    assert.equal(ghost[0]?.status, "unsigned");
+    assert.equal(ghost[0]?.reason, "not installed");
   } finally {
     storage.close();
     await rm(dir, { recursive: true, force: true });
