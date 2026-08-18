@@ -2,8 +2,7 @@ import { join } from "node:path";
 import { run } from "../utils/proc.ts";
 import { GitError } from "../utils/errors.ts";
 import { pathExists } from "../utils/fs.ts";
-import { matchesGlob } from "../utils/glob.ts";
-import { normalizePhrases } from "../utils/text.ts";
+import { inferGitSignals } from "./signals.ts";
 
 export interface GitContext {
   repoRoot: string | null;
@@ -51,49 +50,16 @@ export async function getGitContext(cwd: string): Promise<GitContext> {
   const log = await git(ctx.repoRoot, "rev-list", "--count", "HEAD");
   if (log.ok) ctx.commitCount = Number(log.stdout.trim()) || 0;
 
-  ctx.signals = inferSignals([...new Set([...ctx.changed, ...ctx.staged])]);
+  ctx.signals = inferGitSignals([...new Set([...ctx.changed, ...ctx.staged])]);
   return ctx;
-}
-
-const SIGNAL_PATTERNS: Array<{ signals: string[]; patterns: string[] }> = [
-  { signals: ["authentication"], patterns: ["**/auth/**", "**/login/**", "**/middleware*", "**/*oauth*", "**/*session*", "**/*jwt*", "**/*token*"] },
-  { signals: ["security"], patterns: ["**/*security*", "**/*audit*", "**/*vulnerab*", "**/csrf*", "**/*csp*", "**/*sanitize*", "**/*escape*"] },
-  { signals: ["database"], patterns: ["**/migrations/**", "**/*migration*", "**/schema.prisma", "**/schema.sql", "**/drizzle/**", "**/*.sql"] },
-  { signals: ["testing"], patterns: ["**/*.test.*", "**/*.spec.*", "**/__tests__/**", "**/tests/**", "**/test/**", "**/*.e2e.*"] },
-  { signals: ["frontend"], patterns: ["**/components/**", "**/*.jsx", "**/*.tsx", "**/*.css", "**/*.scss", "**/*.html", "**/pages/**", "**/pages/**", "**/app/page*"] },
-  { signals: ["api"], patterns: ["**/api/**", "**/routes/**", "**/controllers/**", "**/handlers/**", "**/*endpoint*"] },
-  { signals: ["deployment"], patterns: ["**/Dockerfile*", "**/docker-compose*", "**/*.yml", "**/*.yaml", "**/.github/workflows/**", "**/Procfile", "**/vercel.json", "**/netlify.toml"] },
-  { signals: ["documentation"], patterns: ["**/*.md", "**/docs/**"] },
-  { signals: ["typescript"], patterns: ["**/*.ts", "**/*.tsx"] },
-  { signals: ["ui"], patterns: ["**/*.css", "**/*.scss", "**/*.less", "**/*.tailwind*", "**/theme/**", "**/styles/**"] },
-  { signals: ["payments"], patterns: ["**/*stripe*", "**/*payment*", "**/*checkout*", "**/*billing*"] },
-  { signals: ["webhook"], patterns: ["**/*webhook*"] },
-  { signals: ["subscription"], patterns: ["**/*subscription*", "**/*billing*", "**/*plan*"] },
-  { signals: ["workflow"], patterns: ["**/.github/workflows/**"] },
-  { signals: ["refactoring"], patterns: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"] },
-];
-
-function inferSignals(files: string[]): string[] {
-  const signals = new Set<string>();
-  if (files.length === 0) return [];
-  for (const file of files) {
-    for (const { signals: sigs, patterns } of SIGNAL_PATTERNS) {
-      if (matchesGlob(file, patterns)) {
-        for (const s of sigs) signals.add(normalizeAlias(s));
-      }
-    }
-  }
-  return [...signals];
-}
-
-function normalizeAlias(signal: string): string {
-  return [...normalizePhrases(signal)][0] ?? signal;
 }
 
 async function git(cwd: string, ...args: string[]): Promise<{ ok: boolean; stdout: string; stderr: string }> {
   const result = await run("git", args, { cwd, timeoutMs: 15000 });
   return { ok: result.ok, stdout: result.stdout, stderr: result.stderr };
 }
+
+export { inferGitSignals, GIT_SIGNAL_PATTERNS } from "./signals.ts";
 
 export function isGitError(err: unknown): err is GitError {
   return err instanceof GitError;
