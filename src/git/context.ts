@@ -33,9 +33,8 @@ export async function getGitContext(cwd: string): Promise<GitContext> {
       let file = line.slice(3).trim();
       if (file.includes(" -> ")) file = file.split(" -> ")[1]!.trim();
       if (!file || file.startsWith(".skillrouter/")) continue;
-      const tracked = !(flag[0] === "?" && flag[1] === "?");
       ctx.changed.push(file);
-      if (tracked) ctx.staged.push(file);
+      if (flag[0] !== " " && flag[0] !== "?") ctx.staged.push(file);
     }
   }
 
@@ -50,6 +49,7 @@ export async function getGitContext(cwd: string): Promise<GitContext> {
   const log = await git(ctx.repoRoot, "rev-list", "--count", "HEAD");
   if (log.ok) ctx.commitCount = Number(log.stdout.trim()) || 0;
 
+  ctx.staged = [...new Set(ctx.staged)];
   ctx.signals = inferGitSignals([...new Set([...ctx.changed, ...ctx.staged])]);
   return ctx;
 }
