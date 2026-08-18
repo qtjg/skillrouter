@@ -1,6 +1,7 @@
 import type { PlanAction, RouterDecision, CapabilityScore, RouteContext, TaskAnalysis } from "./types.ts";
 import type { CapabilityState } from "../core/types.ts";
 import { resolveConflicts } from "./conflicts.ts";
+import { resolveFallbackChains } from "./fallback.ts";
 
 export interface PlannerOptions {
   threshold: number;
@@ -132,6 +133,15 @@ export function createDecision(
       contextEstimate += capability?.context?.estimatedTokens ?? 0;
     }
   }
+  const chains = resolveFallbackChains(ctx.capabilities);
+  const known = new Set(scores.map((s) => s.capability.id));
+  const fallbacks: Record<string, string[]> = {};
+  for (const action of plan) {
+    if (action.action !== "activate" && action.action !== "keep") continue;
+    const chain = chains.get(action.capabilityId);
+    if (chain) fallbacks[action.capabilityId] = chain.filter((id) => known.has(id)).slice(0, 5);
+  }
+
   return {
     decisionId: randomId(),
     task,
@@ -144,6 +154,7 @@ export function createDecision(
     contextBudget: options.contextBudget,
     semanticUsed: extras.semanticUsed,
     llmUsed: extras.llmUsed,
+    fallbacks,
     createdAt: new Date().toISOString(),
   };
 }

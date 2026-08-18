@@ -77,6 +77,8 @@ export interface RouterDecision {
   llmUsed: boolean;
   latencyMs: number;
   createdAt: string;
+  /** Declared fallback chains for every selected capability (PRD §21). */
+  fallbacks: Record<string, string[]>;
 }
 
 export interface RouteContext {

@@ -7,6 +7,7 @@ export type SkillRouterEvent =
   | { event: "capability.installed"; id: string; version: string }
   | { event: "capability.activated"; id: string; agent: string }
   | { event: "capability.failed"; id: string; error: string }
+  | { event: "capability.fallback"; capability: string; fallback: string; reason: string }
   | { event: "capability.deactivated"; id: string; agent: string }
   | { event: "capability.disabled"; id: string }
   | { event: "capability.enabled"; id: string }

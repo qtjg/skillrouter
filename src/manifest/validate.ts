@@ -153,7 +153,7 @@ export function validateManifest(doc: ManifestDoc): ValidationResult {
     push({ path: "conflicts", message: "must be an array of capability ids" });
   }
 
-  for (const key of ["enhances", "replaces", "compatibleWith"]) {
+  for (const key of ["enhances", "replaces", "compatibleWith", "fallbacks"]) {
     const raw = doc[key];
     if (raw !== undefined && !Array.isArray(raw)) {
       push({ path: key, message: "must be an array of strings" });
@@ -365,6 +365,7 @@ export function normalizeManifest(doc: ManifestDoc, manifestPath: string): Capab
     enhances: Array.isArray(doc["enhances"]) ? (doc["enhances"] as unknown[]).map(String) : undefined,
     replaces: Array.isArray(doc["replaces"]) ? (doc["replaces"] as unknown[]).map(String) : undefined,
     compatibleWith: Array.isArray(doc["compatibleWith"]) ? (doc["compatibleWith"] as unknown[]).map(String) : undefined,
+    fallbacks: Array.isArray(doc["fallbacks"]) ? (doc["fallbacks"] as unknown[]).map(String) : undefined,
     permissions,
     risk: declaredRisk ? { declared: declaredRisk } : undefined,
     context: contextRaw

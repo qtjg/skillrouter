@@ -122,8 +122,8 @@ Legend: `[x]` done, `[~]` partial, `[ ]` pending.
 - [x] ReliabilityEngine (record outcomes, fresh rates, typed events)
 - [x] `historical` scoring factor consumes fresh metrics (declared rate as fallback)
 - [x] `stats` CLI command (table + JSON)
-- [ ] Failure recovery & fallback chains (PRD §21)
-- [ ] `learn` outcome recording command
+- [x] Failure recovery & fallback chains (PRD §21)
+- [x] `learn` outcome recording command (failures suggest a declared fallback)
 - [ ] Routing strategies (balanced/quality/speed/cheap/minimal/safe) + cost/latency metadata
 
 ## Future (documented, not built in V0.1)

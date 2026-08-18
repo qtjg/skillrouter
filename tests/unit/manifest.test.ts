@@ -102,6 +102,37 @@ test("normalizeManifest converts to Capability", () => {
   assert.equal(cap.manifestPath, "stripe.yaml");
 });
 
+test("normalizeManifest carries fallback chains through", () => {
+  const content = `schema: skillrouter/v1
+id: web-search
+name: Web Search
+version: 1.0.0
+description: research the web
+type: skill
+fallbacks:
+  - browser-search
+  - http-fetch
+`;
+  const cap = normalizeManifest(parseManifestYaml(content, "web-search.yaml"), "web-search.yaml");
+  assert.deepEqual(cap.fallbacks, ["browser-search", "http-fetch"]);
+});
+
+test("validateManifest rejects non-array fallbacks", () => {
+  const doc = parseManifestYaml(
+    `schema: skillrouter/v1
+id: web-search
+name: Web Search
+version: 1.0.0
+description: research the web
+type: skill
+fallbacks: browser-search
+`,
+    "web-search.yaml",
+  );
+  const report = validateManifest(doc);
+  assert.ok(report.problems.some((p) => p.path === "fallbacks" && p.message.includes("array")));
+});
+
 test("loadManifestFromContent rejects manifests with fatal problems", () => {
   assert.throws(
     () => loadManifestFromContent("id: no-schema\nname: X\nversion: 1.0.0\n", "f.yaml"),

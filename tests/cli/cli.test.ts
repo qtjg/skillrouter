@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import main from "../../src/cli/index.ts";
@@ -126,6 +126,65 @@ test("main stats reports reliability observations in table and json mode", async
       code = await main(["stats", "--json"]);
       assert.equal(code, 0);
       assert.deepEqual(JSON.parse(captured.out), { capabilities: [] });
+    } finally {
+      release();
+    }
+  });
+});
+
+test("main learn records outcomes visible in stats and audit", async () => {
+  await withCleanEnv(async () => {
+    const manifestDir = join(process.cwd(), "skills", "web-search");
+    await mkdir(manifestDir, { recursive: true });
+    await writeFile(
+      join(manifestDir, "skillrouter.yaml"),
+      `schema: skillrouter/v1
+id: web-search
+name: Web Search
+version: 1.0.0
+description: research the web
+type: skill
+fallbacks:
+  - browser-search
+`,
+      "utf8",
+    );
+    const browserDir = join(process.cwd(), "skills", "browser-search");
+    await mkdir(browserDir, { recursive: true });
+    await writeFile(
+      join(browserDir, "skillrouter.yaml"),
+      `schema: skillrouter/v1
+id: browser-search
+name: Browser Search
+version: 1.0.0
+description: browser research
+type: skill
+`,
+      "utf8",
+    );
+    capture();
+    try {
+      let code = await main(["source", "add", "builtin", join(process.cwd(), "skills")]);
+      assert.equal(code, 0);
+      capture();
+      code = await main(["learn", "web-search", "--failure", "--task", "research pricing"]);
+      assert.equal(code, 0);
+      assert.match(captured.out, /Recorded failure for web-search/);
+      assert.match(captured.out, /Fallback suggested: browser-search/);
+
+      capture();
+      code = await main(["stats", "--json"]);
+      assert.equal(code, 0);
+      const stats = JSON.parse(captured.out) as { capabilities: Array<{ id: string; tasks: number; failures: number }> };
+      assert.equal(stats.capabilities.length, 1);
+      assert.equal(stats.capabilities[0]!.tasks, 1);
+      assert.equal(stats.capabilities[0]!.failures, 1);
+
+      capture();
+      code = await main(["audit", "--json"]);
+      assert.equal(code, 0);
+      const audit = JSON.parse(captured.out) as Array<{ action: string; capability: string }>;
+      assert.ok(audit.some((e) => e.action === "learn-failure" && e.capability === "web-search"));
     } finally {
       release();
     }

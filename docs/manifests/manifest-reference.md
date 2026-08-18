@@ -26,6 +26,8 @@ type: skill                 # one of the 14 types below
 | `compatibility` | object | Per-agent map, values `native` \| `compatible` \| `adaptable` \| `unsupported`; unknown agents treated as `adaptable`. |
 | `dependencies` | array | Entries as strings (`{ id }`) or objects `{ id, version?, optional? }` (id must be a valid capability id; `optional: true` tolerates absence). |
 | `conflicts` | string[] | Capability ids this capability conflicts with; resolved by the router. |
+| `enhances` / `replaces` / `compatibleWith` | string[] | Relationship metadata used by the capability graph: augmented capabilities, superseded capabilities, and compatibility tags (environments/tools). |
+| `fallbacks` | string[] | **Ordered** fallback capability ids to activate if this capability fails at runtime; used by `skillrouter learn --failure` and the fallback resolver (loops are prevented — see [routing](../routing/how-routing-works.md)). |
 | `permissions` | object | Declared permission surface — see [security/permissions.md](../security/permissions.md). |
 | `risk` | object | Declared hint: `level` (`low`\|`medium`\|`high`\|`critical`), `score` (0–100), `reasons` (string[]). The engine only uses it as a **floor**; risk is computed from permissions. |
 | `context` | object | `estimatedTokens` (number), `activationLevel` (0–5), `resources` (string[]). |

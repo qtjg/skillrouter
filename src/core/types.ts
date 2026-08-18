@@ -176,6 +176,8 @@ export interface Capability {
   enhances?: string[];
   replaces?: string[];
   compatibleWith?: string[];
+  /** Ordered fallback capability ids to try when this capability fails (PRD §21). */
+  fallbacks?: string[];
   permissions?: PermissionSet;
   risk?: RiskProfile;
   context?: ContextProfile;

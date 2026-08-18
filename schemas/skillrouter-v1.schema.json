@@ -111,6 +111,11 @@
       "items": { "type": "string" },
       "description": "Environment or ecosystem names (e.g. linux, docker, nextjs) this capability is compatible with."
     },
+    "fallbacks": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Ordered capability ids to try when this capability fails at runtime; guarantees loop prevention."
+    },
     "permissions": {
       "type": "object",
       "description": "Declared permission surface. Drives risk scoring and consent.",

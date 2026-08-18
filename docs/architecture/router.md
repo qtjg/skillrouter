@@ -63,6 +63,7 @@ Pure functions over capability metadata:
   - `keep-inactive` — not selected; "explicitly avoided by configuration" if id is in `avoid`.
 - Each action carries `confidence` (score ≥ 70 high, ≥ 50 medium, else low), reasons (signals), and a human-readable permission requirement list.
 - `createDecision` also computes `contextEstimate` (sum of `estimatedTokens` of activated/kept capabilities) against the 12000-token `contextBudget` default.
+- Each selected capability carries its declared `fallbacks` chain (only members that are routing candidates) in `decision.fallbacks`; the runtime can pick the next member when the capability fails — see `src/router/fallback.ts` (chain walk with `attempted`-set loop prevention and a step cap) and `skillrouter learn --failure`, which records the outcome and suggests the next fallback.
 
 Modes (`router.mode`): `manual` forces a dry run at the CLI level; `automatic`/`autonomous` apply without the confirmation prompt; `assisted` (default) asks. Consent is separate from mode — the runtime never auto-approves what policy says to ask.
 

@@ -36,8 +36,8 @@ Legend: `[x]` implemented + tested · `[~]` partial · `[ ]` missing
 
 | PRD | Gap | Status |
 |-----|-----|--------|
-| §22–23 | Reliability metrics: no `skill_metrics` table; `historical` score factor reads only static declared `metadata.successRate`; no bounded updates | `[ ]` Phase A |
-| §21 | Failure recovery: no fallback chains (per-capability ordered fallbacks, loop prevention, fallback events) | `[ ]` Phase B |
+| §22–23 | Reliability metrics: no `skill_metrics` table; `historical` score factor reads only static declared `metadata.successRate`; no bounded updates | `[x]` Phase A |
+| §21 | Failure recovery: no fallback chains (per-capability ordered fallbacks, loop prevention, fallback events) | `[x]` Phase B |
 | §13/§50 | Routing strategies (balanced/quality/speed/cheap/minimal/safe); `cost`/`latency` metadata absent from model | `[ ]` Phase C |
 | §7 | CapabilityGraph + ContextEngine exist but are not wired into the router pipeline | `[ ]` Phase D |
 | §61 | `trace` command (observability of a routing decision) | `[ ]` Phase F |
