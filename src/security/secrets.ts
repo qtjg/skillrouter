@@ -55,15 +55,25 @@ export function scanTextForSecrets(content: string, fileName: string): SecretMat
   const matches: SecretMatch[] = [];
   if (content.length > 2 * 1024 * 1024) return matches;
   const lines = content.split("\n");
+  const isComment = (line: string): boolean => /^\s*(#|\/\/|\/\*|\*)/.test(line);
   for (const rule of SECRET_RULES) {
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i]!;
-      if (/^\s*(#|\/\/|\/\*|\*)/.test(line)) continue;
-      if (rule.regexes.some((re) => re.test(line))) {
-        matches.push({ file: fileName, pattern: rule.name, line: i + 1 });
-        break;
+    let matchedLine = -1;
+    for (let i = 0; i < lines.length && matchedLine === -1; i++) {
+      if (isComment(lines[i]!)) continue;
+      if (rule.regexes.some((re) => re.test(lines[i]!))) matchedLine = i + 1;
+    }
+    // multi-line rules (e.g. PEM private keys) never match a single line;
+    // test the full content and report the line where the match starts.
+    if (matchedLine === -1 && rule.regexes.some((re) => re.source.includes("\\s\\S"))) {
+      for (const re of rule.regexes) {
+        const match = new RegExp(re.source).exec(content);
+        if (match) {
+          matchedLine = content.slice(0, match.index).split("\n").length;
+          break;
+        }
       }
     }
+    if (matchedLine !== -1) matches.push({ file: fileName, pattern: rule.name, line: matchedLine });
   }
   return matches;
 }

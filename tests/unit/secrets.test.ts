@@ -27,7 +27,7 @@ test("scanTextForSecrets catches generic assignments", () => {
 });
 
 test("scanTextForSecrets finds private keys and JWTs", () => {
-  const pem = "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAqNFw==";
+  const pem = "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEAqNFw==\n-----END RSA PRIVATE KEY-----";
   assert.ok(scanTextForSecrets(pem, "key.pem").some((m) => m.pattern === "private-key"));
   const jwt = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U";
   assert.ok(scanTextForSecrets(jwt, "token.txt").some((m) => m.pattern === "jwt"));
