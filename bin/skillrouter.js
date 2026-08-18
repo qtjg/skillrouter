@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
 const root = dirname(fileURLToPath(import.meta.url));
-const compiled = join(root, "..", "dist", "src", "cli", "index.ts");
+const compiled = join(root, "..", "dist", "src", "cli", "index.js");
 const source = join(root, "..", "src", "cli", "index.ts");
 
 const entry = existsSync(compiled) ? compiled : source;
