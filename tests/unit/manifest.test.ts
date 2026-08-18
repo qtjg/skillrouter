@@ -78,7 +78,6 @@ type: skill
 permissions:
   network:
     allowed: ["*"]
-    explicit: true
 `,
     "wide.yaml",
   );

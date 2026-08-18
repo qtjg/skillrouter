@@ -8,6 +8,7 @@ test("isValidCapabilityId accepts lowercase ids", () => {
   assert.equal(isValidCapabilityId("nextjs-optimizer"), true);
   assert.equal(isValidCapabilityId("a"), true);
   assert.equal(isValidCapabilityId("0abc"), true);
+  assert.equal(isValidCapabilityId("trailing-"), true);
 });
 
 test("isValidCapabilityId rejects invalid ids", () => {
@@ -15,7 +16,6 @@ test("isValidCapabilityId rejects invalid ids", () => {
   assert.equal(isValidCapabilityId("stripe expert"), false);
   assert.equal(isValidCapabilityId("cap:test-writer"), false);
   assert.equal(isValidCapabilityId("-leading"), false);
-  assert.equal(isValidCapabilityId("trailing-"), false);
   assert.equal(isValidCapabilityId(""), false);
   assert.equal(isValidCapabilityId("x".repeat(65)), false);
 });

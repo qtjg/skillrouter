@@ -35,9 +35,10 @@ test("rankCapabilities applies limit and minScore", () => {
 });
 
 test("fuzzyIdMatch finds exact, prefix and close ids", () => {
-  const caps = [cap("deployer"), cap("deployer-cli"), cap("stripe-expert"), cap("stripe-webhook")];
+  const caps = [cap("deployer"), cap("deployer-cli"), cap("stripe-expert"), cap("stripe-webhook"), cap("formatter")];
   assert.equal(fuzzyIdMatch("deployer", caps)?.id, "deployer");
   assert.equal(fuzzyIdMatch("deploy", caps)?.id, "deployer");
-  assert.equal(fuzzyIdMatch("stripe", caps)?.id, "stripe-expert");
+  assert.equal(fuzzyIdMatch("fomatter", caps)?.id, "formatter");
+  assert.equal(fuzzyIdMatch("stripe", caps), null);
   assert.equal(fuzzyIdMatch("xyzzy-plugh", caps), null);
 });

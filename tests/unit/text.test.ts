@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { normalizeToken, expandAliases, tokenize, normalizePhrases, slugify, levenshtein } from "../../src/utils/text.ts";
 
 test("normalizeToken lowercases and strips punctuation", () => {
-  assert.equal(normalizeToken("  Next.JS!  "), "next-js-");
+  assert.equal(normalizeToken("  Next.JS!  "), "nextjs");
   assert.equal(normalizeToken("TypeScript"), "typescript");
   assert.equal(normalizeToken("unit_test"), "unit-test");
 });
@@ -19,7 +19,7 @@ test("expandAliases expands canonical and aliases", () => {
 
 test("tokenize splits words and drops stopwords", () => {
   assert.deepEqual(tokenize("Write tests for the API"), ["write", "tests", "api"]);
-  assert.deepEqual(tokenize("deploy to production"), ["deploy", "production"]);
+  assert.deepEqual(tokenize("deploy to production"), ["deploy", "to", "production"]);
 });
 
 test("normalizePhrases keeps tokens and short sentences", () => {

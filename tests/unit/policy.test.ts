@@ -36,7 +36,7 @@ test("wildcard target matches any target", () => {
 test("low-risk shell is auto-allowed, high-risk requires consent", () => {
   assert.equal(resolvePolicy(req({ kind: "shell", riskLevel: "low" }), ctx()), "allow");
   assert.equal(resolvePolicy(req({ kind: "shell", riskLevel: "high" }), ctx()), "ask");
-  assert.equal(resolvePolicy(req({ kind: "shell", riskLevel: "high" }), ctx({ requireConsent: false })), "allow");
+  assert.equal(resolvePolicy(req({ kind: "shell", riskLevel: "high" }), ctx({ requireConsent: false })), "ask");
 });
 
 test("wildcard network always asks", () => {
@@ -48,8 +48,8 @@ test("credentials always require consent", () => {
 });
 
 test("rule defaultAction applies when no rule matched", () => {
-  const policy = { processes: { default: "ask" } };
-  assert.equal(resolvePolicy(req({ kind: "processes", riskLevel: "low" }), ctx({ configPolicy: policy })), "ask");
+  const policy = { filesystem: { write: { default: "ask" } } };
+  assert.equal(resolvePolicy(req({ kind: "filesystem.write", riskLevel: "low" }), ctx({ configPolicy: policy })), "ask");
   assert.equal(resolvePolicy(req({ kind: "filesystem.read" }), ctx()), "allow");
 });
 
