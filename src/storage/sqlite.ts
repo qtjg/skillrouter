@@ -5,6 +5,20 @@ import { ensureDir } from "../utils/fs.ts";
 import { SkillRouterError } from "../utils/errors.ts";
 import { installedAgentsJson, parseAgentsJson, type Storage, type InstalledCapabilityRow, type RoutingHistoryRow, type AuditRow, type PreferenceRow, type TrustRow, type RouterCacheRow } from "./types.ts";
 
+function toHistoryRow(raw: Record<string, unknown>): RoutingHistoryRow {
+  return {
+    id: Number(raw.id),
+    ts: String(raw.ts),
+    task: String(raw.task),
+    project: raw.project as string | null,
+    decisionId: raw.decision_id as string,
+    activations: String(raw.activations),
+    deactivations: String(raw.deactivations),
+    selected: String(raw.selected),
+    mode: String(raw.mode),
+  };
+}
+
 function toInstalledRow(raw: Record<string, unknown>): InstalledCapabilityRow {
   return {
     id: String(raw.id),
@@ -218,10 +232,10 @@ export class SqliteStorage implements Storage {
 
   async getHistory(filter: { task?: string; limit?: number } = {}): Promise<RoutingHistoryRow[]> {
     const limit = filter.limit ?? 50;
-    if (filter.task) {
-      return this.connection.prepare(`SELECT * FROM routing_history WHERE task LIKE ? ORDER BY ts DESC LIMIT ?`).all(`%${filter.task}%`, limit) as unknown as RoutingHistoryRow[];
-    }
-    return this.connection.prepare(`SELECT * FROM routing_history ORDER BY ts DESC LIMIT ?`).all(limit) as unknown as RoutingHistoryRow[];
+    const rows = filter.task
+      ? this.connection.prepare(`SELECT * FROM routing_history WHERE task LIKE ? ORDER BY ts DESC LIMIT ?`).all(`%${filter.task}%`, limit)
+      : this.connection.prepare(`SELECT * FROM routing_history ORDER BY ts DESC LIMIT ?`).all(limit);
+    return rows.map((row) => toHistoryRow(row as Record<string, unknown>));
   }
 
   async addHistory(entry: Omit<RoutingHistoryRow, "id" | "ts">): Promise<void> {

@@ -74,7 +74,8 @@ test("SqliteStorage preferences, trust, history, audit, cache", async () => {
   try {
     await storage.setPreference("mode", "automatic");
     assert.equal(await storage.getPreference("mode"), "automatic");
-    assert.deepEqual(await storage.allPreferences(), [{ key: "mode", value: "automatic" }]);
+    const prefs = await storage.allPreferences();
+    assert.deepEqual(prefs.map((p) => ({ ...p })), [{ key: "mode", value: "automatic" }]);
 
     await storage.setTrust("a", "trusted", "reviewed");
     const trust = await storage.getTrust("a");
