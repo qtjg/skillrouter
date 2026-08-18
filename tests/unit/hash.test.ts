@@ -30,7 +30,7 @@ test("sha256Dir produces stable hash and excludes .hash files", async () => {
     await writeFile(join(dir, "ignored.hash"), "skip");
     const walk = async (d: string): Promise<string[]> =>
       ["a.txt", "b.txt", "ignored.hash"].map((name) => join(d, name));
-    const expected = sha256(sha256("a.txt") + "\0" + sha256("aa") + "\0" + sha256("b.txt") + "\0" + sha256("bb") + "\0");
+    const expected = sha256("a.txt\0" + sha256("aa") + "\0" + "b.txt\0" + sha256("bb") + "\0");
     assert.equal(await sha256Dir(dir, walk), expected);
     const repeated = await sha256Dir(dir, walk);
     assert.equal(repeated, expected);
