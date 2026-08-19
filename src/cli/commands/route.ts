@@ -17,6 +17,7 @@ import type { RouteContext, RouterDecision } from "../../router/types.ts";
 import { ROUTER_STRATEGIES, type RouterStrategy } from "../../config/config.ts";
 import type { RouteConstraints } from "../../constraints/constraints.ts";
 import { collectContext } from "../../context/collect.ts";
+import { OutcomeStore } from "../../learning/outcomes.ts";
 import { join } from "node:path";
 
 export const routeCommand: CommandDef = {
@@ -61,8 +62,11 @@ export const routeCommand: CommandDef = {
         enabled: app.config.router.context.enabled,
         timeoutMs: app.config.router.context.timeoutMs,
       });
+      const outcomes = app.config.learning?.enabled
+        ? await new OutcomeStore(app.storage, app.config.learning.maxOutcomes).summaries()
+        : undefined;
 
-      const routeCtx: RouteContext = { task, cwd: app.cwd, project, git, capabilities, installed, agents, config, context, constraints, metrics: new Map((await app.storage.allMetrics()).map((m) => [m.capabilityId, m])) };
+      const routeCtx: RouteContext = { task, cwd: app.cwd, project, git, capabilities, installed, agents, config, context, constraints, metrics: new Map((await app.storage.allMetrics()).map((m) => [m.capabilityId, m])), outcomes };
       const decision = await new Router().route(routeCtx);
 
       const dryRun = Boolean(ctx.flags["dry-run"]) || app.config.router.mode === "manual";

@@ -60,6 +60,23 @@ export interface MetricsRow {
   lastUpdated: string;
 }
 
+/**
+ * One execution outcome (PRD §22/§23): latency, verification and user rating
+ * beyond the plain success/failure aggregates in {@link MetricsRow}.
+ */
+export interface SkillOutcomeRow {
+  executionId: string;
+  capabilityId: string;
+  task: string;
+  success: boolean;
+  latencyMs: number | null;
+  verification: "pass" | "fail" | null;
+  rating: number | null;
+  ts: string;
+  /** Free-form context (strategy, model, …) as JSON. */
+  context: string | null;
+}
+
 export interface Storage {
   /** Directory that contains the database and other runtime state. */
   readonly dataDir: string;
@@ -97,6 +114,12 @@ export interface Storage {
   getMetrics(capabilityId: string): Promise<MetricsRow | null>;
   setMetrics(metrics: MetricsRow): Promise<void>;
   allMetrics(): Promise<MetricsRow[]>;
+
+  addSkillOutcome(outcome: SkillOutcomeRow): Promise<void>;
+  /** Newest outcomes, at most `perCapabilityLimit` per capability. */
+  recentSkillOutcomes(perCapabilityLimit?: number): Promise<SkillOutcomeRow[]>;
+  /** Drops the oldest outcomes of a capability, keeping the newest `keep`. */
+  pruneSkillOutcomes(capabilityId: string, keep: number): Promise<void>;
 }
 
 export function installedAgentsJson(agents: string[]): string {

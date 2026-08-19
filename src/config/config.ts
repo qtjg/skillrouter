@@ -41,6 +41,20 @@ export interface SecurityConfig {
   policy: Record<string, unknown>;
 }
 
+/**
+ * Self-learning (PRD §22–23, Phase G). Everything is opt-in-scoped: with
+ * `enabled: false` scoring behaves exactly as before this phase landed.
+ */
+export interface LearningConfig {
+  enabled: boolean;
+  /** Max points observed reputation may add to the `historical` factor. */
+  reputationWeight: number;
+  /** Points per 1000 ms of observed average latency (penalty). */
+  latencyWeight: number;
+  /** Bounded outcome history kept per capability. */
+  maxOutcomes: number;
+}
+
 export interface AgentsConfig {
   opencode: boolean;
   gemini: boolean;
@@ -63,6 +77,7 @@ export interface SkillRouterConfig {
   router: RouterConfig;
   capabilities: CapabilitiesConfig;
   security: SecurityConfig;
+  learning: LearningConfig;
   agents: AgentsConfig;
   sources: SourcesConfigItem[];
 }
@@ -93,6 +108,12 @@ export const DEFAULT_CONFIG: SkillRouterConfig = {
     requireConsent: true,
     blocked: [],
     policy: {},
+  },
+  learning: {
+    enabled: true,
+    reputationWeight: 8,
+    latencyWeight: 5,
+    maxOutcomes: 1000,
   },
   agents: {
     opencode: true,
@@ -190,6 +211,21 @@ function validateConfig(config: SkillRouterConfig, path: string): SkillRouterCon
     throw new ConfigError(`router.threshold in ${path} must be a number between 0 and 100`);
   }
   if (config.router.maxActivations < 0) throw new ConfigError(`router.maxActivations in ${path} must be >= 0`);
+  if (typeof config.learning?.enabled !== "boolean") {
+    throw new ConfigError(`learning.enabled in ${path} must be a boolean`);
+  }
+  const reputationWeight = config.learning?.reputationWeight;
+  if (typeof reputationWeight !== "number" || !Number.isFinite(reputationWeight) || reputationWeight < 0 || reputationWeight > 50) {
+    throw new ConfigError(`learning.reputationWeight in ${path} must be a number between 0 and 50`);
+  }
+  const latencyWeight = config.learning?.latencyWeight;
+  if (typeof latencyWeight !== "number" || !Number.isFinite(latencyWeight) || latencyWeight < 0 || latencyWeight > 50) {
+    throw new ConfigError(`learning.latencyWeight in ${path} must be a number between 0 and 50`);
+  }
+  const maxOutcomes = config.learning?.maxOutcomes;
+  if (typeof maxOutcomes !== "number" || !Number.isFinite(maxOutcomes) || maxOutcomes < 10 || maxOutcomes > 100000) {
+    throw new ConfigError(`learning.maxOutcomes in ${path} must be a number between 10 and 100000`);
+  }
   for (const item of config.sources) {
     if (!item.name || !["git", "catalog", "directory"].includes(item.type)) {
       throw new ConfigError(`Invalid source entry in ${path}: name and type ("git" | "catalog" | "directory") are required`);

@@ -104,6 +104,8 @@ export interface RouteContext {
   config: SkillRouterConfig;
   /** Fresh reliability observations; when present they override declared successRate. */
   metrics?: Map<string, MetricsRow>;
+  /** Outcome summaries per capability (Phase G); drives adaptive reputation/latency scoring. */
+  outcomes?: Map<string, import("../learning/outcomes.ts").OutcomeSummary>;
   /** Normalized context for the current workspace (Phase D); optional in tests. */
   context?: import("../context/types.ts").NormalizedContext;
   /** Classified intent (Phase E); computed by the router when absent. */

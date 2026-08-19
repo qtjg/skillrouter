@@ -14,7 +14,8 @@ export type SkillRouterEvent =
   | { event: "agent.detected"; agent: string }
   | { event: "permission.requested"; capability: string; permission: string }
   | { event: "router.decided"; decisionId: string; task: string; activations: string[]; deactivations: string[] }
-  | { event: "metrics.updated"; capabilityId: string; successRate: number; ok: "success" | "failure"; context: string | null };
+  | { event: "metrics.updated"; capabilityId: string; successRate: number; ok: "success" | "failure"; context: string | null }
+  | { event: "feedback.received"; executionId: string; capabilityId: string; success: boolean; latencyMs: number | null; verification: "pass" | "fail" | null; rating: number | null; observations: number };
 
 export type EventName = SkillRouterEvent["event"];
 

@@ -261,6 +261,7 @@ export function scoreSingleCapability(
 
   // --- Historical: fresh dynamic metrics win; declared successRate is the fallback; declared reliability last ---
   const metric = ctx.metrics?.get(capability.id);
+  const summary = ctx.outcomes?.get(capability.id);
   if (metric && metric.tasks > 0) {
     const rate = metric.successes / metric.tasks;
     const rounded = Math.round(rate * 1000) / 1000;
@@ -270,15 +271,35 @@ export function scoreSingleCapability(
   } else if (capability.metadata?.reliability !== undefined) {
     add("historical", capability.metadata.reliability * w.historicalFactor, `declared reliability ${Math.round(capability.metadata.reliability * 100)}%`);
   }
+  // --- Phase G: observed reputation nudge (verification/rating), bounded and gated by learning.enabled ---
+  if (summary && ctx.config.learning?.enabled) {
+    let delta = 0;
+    const parts: string[] = [];
+    if (summary.verificationRate !== null) {
+      delta += summary.verificationRate * w.historicalFactor * 0.25;
+      parts.push(`verification ${Math.round(summary.verificationRate * 100)}%`);
+    }
+    if (summary.avgRating !== null) {
+      delta += (summary.avgRating / 2) * w.historicalFactor * 0.25;
+      parts.push(`rating ${summary.avgRating > 0 ? "+" : ""}${summary.avgRating}`);
+    }
+    if (parts.length > 0) {
+      delta = Math.max(-ctx.config.learning.reputationWeight, Math.min(ctx.config.learning.reputationWeight, delta));
+      if (delta !== 0) add("historical", Math.round(delta * 1000) / 1000, `reputation: ${parts.join(", ")}`);
+    }
+  }
 
-  // --- Cost & latency (declared overhead, PRD §9/§50) ---
+  // --- Cost & latency (PRD §9/§50; observed latency replaces declared when learning is enabled) ---
   const cost = capability.metadata?.cost;
   if (cost !== undefined && cost > 0) {
     add("cost", -cost * w.costFactor, `declared cost ${cost}/5`);
   }
-  const latency = capability.metadata?.latency;
-  if (latency !== undefined && latency > 0) {
-    add("latency", -latency * w.latencyFactor, `declared latency ${latency}/5`);
+  const declaredLatency = capability.metadata?.latency;
+  if (summary?.avgLatencyMs !== null && summary && ctx.config.learning?.enabled) {
+    const penalty = Math.min(w.contextPenaltyCap, (summary.avgLatencyMs! / 1000) * ctx.config.learning.latencyWeight);
+    add("latency", -Math.round(penalty * 1000) / 1000, `observed average latency ${Math.round(summary.avgLatencyMs!)}ms over ${summary.usage} executions`);
+  } else if (declaredLatency !== undefined && declaredLatency > 0) {
+    add("latency", -declaredLatency * w.latencyFactor, `declared latency ${declaredLatency}/5`);
   }
 
   // --- Penalties ---

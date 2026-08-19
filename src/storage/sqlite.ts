@@ -3,7 +3,7 @@ import { dirname } from "node:path";
 import type { Capability, CapabilityState, TrustLevel } from "../core/types.ts";
 import { ensureDir } from "../utils/fs.ts";
 import { SkillRouterError } from "../utils/errors.ts";
-import { installedAgentsJson, parseAgentsJson, type Storage, type InstalledCapabilityRow, type RoutingHistoryRow, type AuditRow, type PreferenceRow, type TrustRow, type RouterCacheRow, type MetricsRow } from "./types.ts";
+import { installedAgentsJson, parseAgentsJson, type Storage, type InstalledCapabilityRow, type RoutingHistoryRow, type AuditRow, type PreferenceRow, type TrustRow, type RouterCacheRow, type MetricsRow, type SkillOutcomeRow } from "./types.ts";
 
 function toHistoryRow(raw: Record<string, unknown>): RoutingHistoryRow {
   return {
@@ -112,6 +112,21 @@ const MIGRATIONS: string[] = [
     last_updated TEXT NOT NULL
   );
   CREATE INDEX idx_skill_metrics_tasks ON skill_metrics(tasks);
+  `,
+  // migration 3: per-execution outcomes for reputation/adaptive ranking (PRD §22-23)
+  `
+  CREATE TABLE skill_outcomes (
+    execution_id TEXT PRIMARY KEY,
+    capability_id TEXT NOT NULL,
+    task TEXT NOT NULL DEFAULT '',
+    success INTEGER NOT NULL DEFAULT 1,
+    latency_ms INTEGER,
+    verification TEXT,
+    rating INTEGER,
+    ts TEXT NOT NULL,
+    context TEXT
+  );
+  CREATE INDEX idx_skill_outcomes_capability_ts ON skill_outcomes(capability_id, ts);
   `,
 ];
 
@@ -358,5 +373,59 @@ export class SqliteStorage implements Storage {
       failures: Number(row.failures),
       lastUpdated: String(row.last_updated),
     }));
+  }
+
+  private toOutcomeRow(row: Record<string, unknown>): SkillOutcomeRow {
+    return {
+      executionId: String(row.execution_id),
+      capabilityId: String(row.capability_id),
+      task: String(row.task),
+      success: Number(row.success) === 1,
+      latencyMs: row.latency_ms === null || row.latency_ms === undefined ? null : Number(row.latency_ms),
+      verification: (row.verification as "pass" | "fail" | null) ?? null,
+      rating: row.rating === null || row.rating === undefined ? null : Number(row.rating),
+      ts: String(row.ts),
+      context: (row.context as string | null) ?? null,
+    };
+  }
+
+  async addSkillOutcome(outcome: SkillOutcomeRow): Promise<void> {
+    this.connection
+      .prepare(
+        `INSERT INTO skill_outcomes (execution_id, capability_id, task, success, latency_ms, verification, rating, ts, context)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(execution_id) DO UPDATE SET
+           success = excluded.success, latency_ms = excluded.latency_ms,
+           verification = excluded.verification, rating = excluded.rating`,
+      )
+      .run(outcome.executionId, outcome.capabilityId, outcome.task, outcome.success ? 1 : 0, outcome.latencyMs, outcome.verification, outcome.rating, outcome.ts, outcome.context);
+  }
+
+  async recentSkillOutcomes(perCapabilityLimit = 1000): Promise<SkillOutcomeRow[]> {
+    const rows = this.connection
+      .prepare(
+        `SELECT execution_id, capability_id, task, success, latency_ms, verification, rating, ts, context
+         FROM (
+           SELECT *, ROW_NUMBER() OVER (PARTITION BY capability_id ORDER BY ts DESC, execution_id DESC) AS rn
+           FROM skill_outcomes
+         )
+         WHERE rn <= ? ORDER BY ts DESC`,
+      )
+      .all(perCapabilityLimit) as unknown as Array<Record<string, unknown>>;
+    return rows.map((row) => this.toOutcomeRow(row));
+  }
+
+  async pruneSkillOutcomes(capabilityId: string, keep: number): Promise<void> {
+    this.connection
+      .prepare(
+        `DELETE FROM skill_outcomes
+         WHERE capability_id = ? AND execution_id IN (
+           SELECT execution_id FROM skill_outcomes
+           WHERE capability_id = ?
+           ORDER BY ts DESC, execution_id DESC
+           LIMIT -1 OFFSET ?
+         )`,
+      )
+      .run(capabilityId, capabilityId, Math.max(0, keep));
   }
 }
