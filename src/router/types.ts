@@ -96,6 +96,8 @@ export interface RouteContext {
   config: SkillRouterConfig;
   /** Fresh reliability observations; when present they override declared successRate. */
   metrics?: Map<string, MetricsRow>;
+  /** Normalized context for the current workspace (Phase D); optional in tests. */
+  context?: import("../context/types.ts").NormalizedContext;
 }
 
 export interface SemanticResult {

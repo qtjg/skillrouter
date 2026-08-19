@@ -39,7 +39,8 @@ Legend: `[x]` implemented + tested · `[~]` partial · `[ ]` missing
 | §22–23 | Reliability metrics: no `skill_metrics` table; `historical` score factor reads only static declared `metadata.successRate`; no bounded updates | `[x]` Phase A |
 | §21 | Failure recovery: no fallback chains (per-capability ordered fallbacks, loop prevention, fallback events) | `[x]` Phase B |
 | §13/§50 | Routing strategies (balanced/quality/speed/cheap/minimal/safe); `cost`/`latency` metadata absent from model | `[x]` Phase C |
-| §7 | CapabilityGraph + ContextEngine exist but are not wired into the router pipeline | `[ ]` Phase D |
+| §7 | CapabilityGraph + ContextEngine exist but are not wired into the router pipeline | `[x]` Phase D (normalized provider context; wiring into scoring is Phase F) |
+| PRD2 G1 | Context engine: pluggable providers, normalization, secret sanitization, timeouts | `[x]` Phase D |
 | §61 | `trace` command (observability of a routing decision) | `[ ]` Phase F |
 | §34 | Interactive CLI | `[ ]` Phase F |
 
@@ -71,7 +72,8 @@ Legend: `[x]` implemented + tested · `[~]` partial · `[ ]` missing
   resolver with loop prevention, `learn` outcome recording, fallback events
 - **Phase C — Routing strategies**: `router.strategy` config + weight presets +
   `cost`/`latency`/`reliability` metadata
-- **Phase D — Context-aware routing**: wire CapabilityGraph (cluster discovery) and
-  ContextEngine snapshots into the router
+- **Phase D — Context engine**: pluggable providers (git/project/runtime/filesystem/
+  package-manager/environment), bounded flattening, secret redaction, per-provider
+  timeouts, `skillrouter context`
 - **Phase E — Plugin ecosystem**: `plugin install/remove` + pre-install validation
 - **Phase F — Observability & interaction**: `trace`/`graph`/`stats` output, interactive mode

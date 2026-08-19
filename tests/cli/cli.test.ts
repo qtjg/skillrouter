@@ -220,3 +220,30 @@ type: skill
     }
   });
 });
+
+test("main context --json reports normalized context fields without secrets", async () => {
+  const previous = { API_TOKEN: process.env.API_TOKEN, CI: process.env.CI };
+  process.env.API_TOKEN = "cli-secret-value-12345";
+  delete process.env.CI;
+  try {
+    await withCleanEnv(async () => {
+      await writeFile(join(process.cwd(), "package.json"), JSON.stringify({ name: "ctx" }), "utf8");
+      capture();
+      try {
+        const code = await main(["context", "--json"]);
+        assert.equal(code, 0);
+        const parsed = JSON.parse(captured.out) as { fields: Record<string, unknown>; warnings: string[]; timeline: unknown[] };
+        assert.equal(typeof parsed.fields, "object");
+        assert.ok(Array.isArray(parsed.timeline));
+        assert.ok(!JSON.stringify(captured.out).includes("cli-secret-value-12345"), "secret value must never appear in context output");
+      } finally {
+        release();
+      }
+    });
+  } finally {
+    if (previous.API_TOKEN === undefined) delete process.env.API_TOKEN;
+    else process.env.API_TOKEN = previous.API_TOKEN;
+    if (previous.CI === undefined) delete process.env.CI;
+    else process.env.CI = previous.CI;
+  }
+});

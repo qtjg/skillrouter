@@ -9,6 +9,7 @@ import { scanCommand, permissionsCommand, trustCommand, keysCommand, trustCheckC
 import { logsCommand, verifyCommand, exportCommand, auditCommand, selfTestCommand } from "./commands/misc.ts";
 import { statsCommand } from "./commands/stats.ts";
 import { learnCommand } from "./commands/learn.ts";
+import { contextCommand } from "./commands/context.ts";
 import { pathToFileURL } from "node:url";
 
 export function buildRegistry(): CommandRegistry {
@@ -55,6 +56,8 @@ export function buildRegistry(): CommandRegistry {
   // Reliability
   registry.register(statsCommand);
   registry.register(learnCommand);
+  // Context
+  registry.register(contextCommand);
   return registry;
 }
 

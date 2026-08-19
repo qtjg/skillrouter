@@ -125,6 +125,7 @@ Legend: `[x]` done, `[~]` partial, `[ ]` pending.
 - [x] Failure recovery & fallback chains (PRD §21)
 - [x] `learn` outcome recording command (failures suggest a declared fallback)
 - [x] Routing strategies (balanced/quality/speed/cheap/minimal/safe) + cost/latency metadata (route `--strategy`, `router.strategy` config, weight presets in `src/router/factors.ts`)
+- [x] Phase D: pluggable context engine (`src/context/`) — providers git/project/runtime/filesystem/package-manager/environment, normalized dotted fields, secret redaction, per-provider timeouts, `skillrouter context`
 - [ ] Cookbook skills: multi-step planning combining router + runtime observations (PRD §14)
 - [ ] Timeline view of routing history (PRD §10, `--timeline`)
 

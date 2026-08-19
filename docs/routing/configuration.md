@@ -27,6 +27,9 @@ router:
   model: null                 # LLM rerank model id (Level 3); default null
   maxActivations: 5           # max capabilities activated per plan (default 5)
   strategy: balanced          # balanced | quality | speed | cheap | minimal | safe (default: balanced)
+  context:
+    enabled: true             # collect normalized workspace context (default true)
+    timeoutMs: 1000           # per-provider timeout in ms, 1–30000 (default 1000)
 
 capabilities:
   autoInstall: false          # install on demand during routing (default false)

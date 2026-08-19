@@ -24,6 +24,10 @@ export interface RouterConfig {
   model: string | null;
   maxActivations: number;
   strategy: RouterStrategy;
+  context: {
+    enabled: boolean;
+    timeoutMs: number;
+  };
 }
 
 export interface CapabilitiesConfig {
@@ -76,6 +80,10 @@ export const DEFAULT_CONFIG: SkillRouterConfig = {
     model: null,
     maxActivations: 5,
     strategy: "balanced",
+    context: {
+      enabled: true,
+      timeoutMs: 1000,
+    },
   },
   capabilities: {
     autoInstall: false,
@@ -170,6 +178,13 @@ function validateConfig(config: SkillRouterConfig, path: string): SkillRouterCon
   }
   if (!ROUTER_STRATEGIES.includes(config.router.strategy)) {
     throw new ConfigError(`router.strategy in ${path} must be one of ${ROUTER_STRATEGIES.join(", ")}`);
+  }
+  if (typeof config.router.context?.enabled !== "boolean") {
+    throw new ConfigError(`router.context.enabled in ${path} must be a boolean`);
+  }
+  const timeoutMs = config.router.context?.timeoutMs;
+  if (typeof timeoutMs !== "number" || !Number.isFinite(timeoutMs) || timeoutMs < 1 || timeoutMs > 30000) {
+    throw new ConfigError(`router.context.timeoutMs in ${path} must be a number between 1 and 30000`);
   }
   if (typeof config.router.threshold !== "number" || config.router.threshold < 0 || config.router.threshold > 100) {
     throw new ConfigError(`router.threshold in ${path} must be a number between 0 and 100`);
