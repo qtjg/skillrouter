@@ -42,6 +42,7 @@ Legend: `[x]` implemented + tested · `[~]` partial · `[ ]` missing
 | §7 | CapabilityGraph + ContextEngine exist but are not wired into the router pipeline | `[x]` Phase D (normalized provider context; wiring into scoring is Phase F) |
 | PRD2 G1 | Context engine: pluggable providers, normalization, secret sanitization, timeouts | `[x]` Phase D |
 | PRD2 G2 | Intent classification (10 intents, deterministic, confidence) + hard/soft constraints | `[x]` Phase E |
+| §22–23 | Self-learning: per-execution outcomes (latency/verification/rating), reputation model (`reputation` command), adaptive historical/latency scoring gated by `learning` config | `[x]` Phase G |
 | §61 | `trace` command (observability of a routing decision) | `[ ]` Phase F |
 | §34 | Interactive CLI | `[ ]` Phase F |
 
@@ -79,5 +80,9 @@ Legend: `[x]` implemented + tested · `[~]` partial · `[ ]` missing
 - **Phase E — Intent + constraints**: rule-based classifier (10 intents, confidence,
   deterministic), hard constraints (network/cost/latency/permission boundary/requirements),
   soft preference deltas, `skillrouter classify`
+- **Phase G — Self-learning**: per-execution outcomes (`skill_outcomes`, bounded),
+  reputation model (`skillrouter reputation`), adaptive historical/latency factors
+  gated by `learning` config (`enabled`/`reputationWeight`/`latencyWeight`/`maxOutcomes`),
+  `feedback.received` event
 - **Phase E — Plugin ecosystem**: `plugin install/remove` + pre-install validation
 - **Phase F — Observability & interaction**: `trace`/`graph`/`stats` output, interactive mode

@@ -49,6 +49,12 @@ security:
     # hooks:  {}
     # processes: { default: deny }
 
+learning:                     # self-learning (Phase G, PRD §22–23)
+  enabled: true               # observed reputation/latency reach scoring (default true)
+  reputationWeight: 8         # max points verification/rating may nudge `historical` (0–50)
+  latencyWeight: 5            # penalty points per 1000 ms of observed average latency (0–50)
+  maxOutcomes: 1000           # bounded outcome history kept per capability (10–100000)
+
 agents:                       # enable adapters by agent id
   opencode: true              # default true
   gemini: true                # default true
@@ -74,6 +80,7 @@ router.semantic:   false         router.model:        null
 router.maxActivations: 5         router.always/never/prefer/avoid: []
 capabilities.autoInstall: false  capabilities.autoActivate: true
 security.requireConsent: true    security.blocked: []   security.policy: {}
+learning.enabled: true           learning.reputationWeight: 8   learning.latencyWeight: 5   learning.maxOutcomes: 1000
 agents: opencode/gemini/claude/generic true; codex/mcp false
 sources: []
 ```
@@ -97,4 +104,4 @@ Wildcard matching: `*` matches anything; `*.domain` matches the domain or any su
 
 ## Validation
 
-`validateConfig` rejects: unknown `router.mode`; `threshold` outside 0–100; negative `maxActivations`; sources missing `name`/`type` or missing `url` (git) / `path` (directory). Errors are surfaced as `ConfigError`s by `skillrouter config` and `doctor`.
+`validateConfig` rejects: unknown `router.mode`; `threshold` outside 0–100; negative `maxActivations`; non-boolean `learning.enabled`; `learning.reputationWeight`/`latencyWeight` outside 0–50; `learning.maxOutcomes` outside 10–100000; sources missing `name`/`type` or missing `url` (git) / `path` (directory). Errors are surfaced as `ConfigError`s by `skillrouter config` and `doctor`.

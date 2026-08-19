@@ -359,3 +359,66 @@ test("main classify --json returns intent classification", async () => {
     }
   });
 });
+
+test("main learn records latent/verified/rated outcomes visible in reputation", async () => {
+  await withCleanEnv(async () => {
+    const skillDir = join(process.cwd(), "skills", "web-search");
+    await mkdir(skillDir, { recursive: true });
+    await writeFile(
+      join(skillDir, "skillrouter.yaml"),
+      `schema: skillrouter/v1
+id: web-search
+name: Web Search
+version: 1.0.0
+description: research the web
+type: skill
+`,
+      "utf8",
+    );
+    capture();
+    try {
+      let code = await main(["source", "add", "cli-src", join(process.cwd(), "skills")]);
+      assert.equal(code, 0);
+      capture();
+      code = await main(["learn", "web-search", "--success", "--task", "research pricing", "--latency-ms", "1200", "--verification", "pass", "--rating", "1", "--execution-id", "x-abc"]);
+      assert.equal(code, 0);
+      assert.match(captured.out, /Recorded success for web-search/);
+      assert.match(captured.out, /x-abc/);
+
+      capture();
+      code = await main(["reputation", "--json"]);
+      assert.equal(code, 0);
+      const parsed = JSON.parse(captured.out) as { capabilities: Array<{ id: string; usage: number; reliability: number; avgLatencyMs: number | null; userRating: number | null; trust: string }> };
+      assert.equal(parsed.capabilities.length, 1);
+      const entry = parsed.capabilities[0]!;
+      assert.equal(entry.id, "web-search");
+      assert.equal(entry.usage, 1);
+      assert.equal(entry.reliability, 1);
+      assert.equal(entry.avgLatencyMs, 1200);
+      assert.equal(entry.userRating, 1);
+    } finally {
+      release();
+    }
+  });
+});
+
+test("main learn validates rating and verification flags", async () => {
+  await withCleanEnv(async () => {
+    capture();
+    try {
+      let code = await main(["learn", "web-search", "--rating", "9"]);
+      assert.equal(code, 1);
+      assert.match(captured.err, /--rating must be an integer between -2 and \+2/);
+      capture();
+      code = await main(["learn", "web-search", "--verification", "maybe"]);
+      assert.equal(code, 1);
+      assert.match(captured.err, /--verification must be either/);
+      capture();
+      code = await main(["learn", "web-search", "--latency-ms", "abc"]);
+      assert.equal(code, 1);
+      assert.match(captured.err, /--latency-ms must be an integer/);
+    } finally {
+      release();
+    }
+  });
+});
