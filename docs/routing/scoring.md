@@ -32,6 +32,11 @@ Every capability is scored deterministically as a weighted sum of independent fa
 | `contextPenaltyPerK` | 3 |
 | `contextPenaltyCap` | 9 |
 | `permissionPenalty` | 12 |
+| `contextLanguage` | 8 |
+| `contextFramework` | 8 |
+| `contextRuntime` | 6 |
+| `contextMismatchRuntime` | -20 |
+| `intentMatch` | 16 |
 
 `MAX_SCORE = 100`; the raw sum is clamped to `[0, 100]`.
 
@@ -63,8 +68,27 @@ Every capability is scored deterministically as a weighted sum of independent fa
 - **Cost / latency:** declared `metadata.cost` (1–5) subtracts `cost * costFactor`; declared `metadata.latency` (1–5) subtracts `latency * latencyFactor`. Accepted at the manifest root or in `metadata` (PRD §9), `metadata` wins.
 - **Permission cost:** `(risk.score / 100) * permissionPenalty` — the risk engine's 0–100 score scales 12 points (30 under `safe`). Only positive scores penalize.
 - **Quality/history:** declared `metadata.quality` adds its fraction of 8 points. History: **fresh reliability observations** (storage `skill_metrics`, recorded via `skillrouter learn` or the ReliabilityEngine) override declared `metadata.successRate`, which in turn overrides declared `metadata.reliability` (0–1). Each factor is the rate/fraction × its weight; a capability with none of the three contributes nothing to `historical`. Observations are bounded (see learning/metrics.ts), so a few executions cannot distort ranking.
+- **Intent match (Phase E/F):** when a capability declares `capabilities` (categories) that include the classified intent, `intentMatch` (16) is added under `taskSimilarity`. The router computes the intent from the task text when the caller did not supply one.
+- **Context match (Phase D/F):** a normalized workspace context is matched against declared `requirements`: each `language` hit adds `contextLanguage` (8, capped 2 hits), each `framework` hit `contextFramework` (8, capped 3), a `runtime` hit adds `contextRuntime` (6), and a mismatched runtime subtracts `contextMismatchRuntime` (-20). Without a context or without declared requirements this factor stays 0.
+- **Soft preferences (Phase E/F):** constraints `requiredLanguage`/`requiredFramework` add +6 each to a matching candidate's `preference` factor after the hard check.
 
 Signals are kept per factor (`Signal {type, text, weight}`) and feed `skillrouter explain`, so every point in a score is attributable.
+
+## Phase F breakdown (`scoreBreakdownV2`)
+
+Every scored candidate carries a normalized 0–1 breakdown (`src/scoring/breakdown.ts`), surfaced per activation in `skillrouter route --json`:
+
+| Dimension | Signals included |
+| --- | --- |
+| `capability` | keyword, technology, taskSimilarity, project, git, file, dependency, compatibility, trust, quality, preference |
+| `context` | context (language/framework/runtime match) |
+| `intent` | taskSimilarity signals tagged with the intent category |
+| `historical` | historical success |
+| `strategy` | cost, latency, contextCost penalties |
+| `exploration` | reserved for Phase G |
+| `riskPenalty` | permissionCost magnitude |
+
+Each dimension is `clamp01(sum / cap)` with group caps (capability 120, context 30, intent 16, historical 10, strategy 30, exploration 10, riskPenalty 30); `total = clamp01(score / 100)`. The breakdown describes *why* a score landed where it did — dimensions are normalized groups, not additive components.
 
 ## Risk floor — `src/security/risk.ts`
 

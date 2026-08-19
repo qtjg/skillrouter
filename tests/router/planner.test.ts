@@ -25,7 +25,7 @@ function score(id: string, value: number, overrides: Partial<Capability> = {}): 
     signals: [],
     breakdown: {
       keyword: 0, taskSimilarity: 0, technology: 0, project: 0, git: 0, file: 0, dependency: 0,
-      compatibility: 0, trust: 0, quality: 0, historical: 0, cost: 0, latency: 0, contextCost: 0, permissionCost: 0, conflict: 0,
+      compatibility: 0, trust: 0, quality: 0, historical: 0, cost: 0, latency: 0, context: 0, preference: 0, contextCost: 0, permissionCost: 0, conflict: 0,
     },
     compatibility: "compatible",
     trust: "trusted",

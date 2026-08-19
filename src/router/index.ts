@@ -3,6 +3,9 @@ import type { InstalledCapabilityRow } from "../storage/types.ts";
 import type { Capability } from "../core/types.ts";
 import { analyzeTask } from "./analyzer.ts";
 import { prepareCapability, scoreSingleCapability, weightsFor } from "./factors.ts";
+import { scoreBreakdown } from "../scoring/breakdown.ts";
+import { evaluateConstraints } from "../constraints/constraints.ts";
+import { classifyIntent } from "../intent/classifier.ts";
 import { resolveConflicts } from "./conflicts.ts";
 import { buildPlan, createDecision, defaultPlannerOptions, type PlannerOptions } from "./planner.ts";
 import { defaultSemanticMatcher, defaultLlmReranker } from "./semantic.ts";
@@ -55,6 +58,9 @@ export class Router {
     this.semanticCheck(ctx);
     const analysis = analyzeTask(task);
 
+    const intent = ctx.intent ?? classifyIntent(task, ctx.context);
+    ctx = { ...ctx, intent };
+
     const options = this.optionsFrom(ctx);
     let scores = this.rank(ctx, analysis);
 
@@ -79,6 +85,10 @@ export class Router {
     }
 
     const resolved = resolveConflicts(scores);
+    const weights = weightsFor(ctx.config.router.strategy);
+    for (const score of resolved) {
+      score.scoreBreakdownV2 = scoreBreakdown(score, weights);
+    }
     const installedStates = new Map<string, { state: InstalledCapabilityRow["state"]; installed: boolean }>();
     for (const row of ctx.installed.values()) {
       installedStates.set(row.id, { state: row.state, installed: true });
@@ -116,7 +126,12 @@ export class Router {
     const weights = weightsFor(ctx.config.router.strategy);
     const scores: CapabilityScore[] = [];
     for (const capability of ctx.capabilities) {
-      const score = scoreSingleCapability(capability, analysis, ctx, preparedFor(capability), weights);
+      // Phase E: hard constraints eliminate candidates before scoring.
+      if (ctx.constraints) {
+        const constraint = evaluateConstraints(capability, ctx.constraints);
+        if (!constraint.allowed) continue;
+      }
+      const score = scoreSingleCapability(capability, analysis, ctx, preparedFor(capability), weights, ctx.constraints);
       if (score.breakdown.trust <= -100) continue; // blocked capability
       scores.push(score);
     }
@@ -126,10 +141,13 @@ export class Router {
 
   private optionsFrom(ctx: RouteContext): PlannerOptions {
     const config = ctx.config.router;
+    // Phase E: requiredCapabilities are forced into the activation set,
+    // like an ephemeral `always` list scoped to this route.
+    const always = [...(config.always ?? []), ...(ctx.constraints?.requiredCapabilities ?? [])];
     return defaultPlannerOptions({
       threshold: config.threshold,
       maxActivations: config.maxActivations,
-      always: config.always,
+      always,
       never: config.never,
       prefer: config.prefer,
       avoid: config.avoid,

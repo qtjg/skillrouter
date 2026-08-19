@@ -147,6 +147,8 @@ export function createDecision(
     task,
     mode: options.mode,
     strategy: ctx.config.router.strategy,
+    intent: ctx.intent ? { type: ctx.intent.intent, confidence: ctx.intent.confidence } : { type: "analysis", confidence: 0.05 },
+    context: ctx.context?.fields ?? null,
     analysis,
     scores: scoresSort(scores),
     plan,

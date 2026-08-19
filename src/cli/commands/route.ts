@@ -15,6 +15,8 @@ import { audit } from "../../security/audit.ts";
 import { globalBus } from "../../core/events.ts";
 import type { RouteContext, RouterDecision } from "../../router/types.ts";
 import { ROUTER_STRATEGIES, type RouterStrategy } from "../../config/config.ts";
+import type { RouteConstraints } from "../../constraints/constraints.ts";
+import { collectContext } from "../../context/collect.ts";
 import { join } from "node:path";
 
 export const routeCommand: CommandDef = {
@@ -28,9 +30,10 @@ export const routeCommand: CommandDef = {
     { name: "yes", short: "y", description: "apply the plan without interactive confirmation" },
     { name: "apply", description: "apply the plan (activate/deactivate) in the connected agents" },
     { name: "strategy", type: "string", description: `override the routing strategy: ${ROUTER_STRATEGIES.join("|")} (default: config router.strategy)` },
+    { name: "constraints", type: "string", description: "JSON constraints apply before ranking, e.g. {\"network\":\"forbidden\",\"permissions\":[\"filesystem.read\"],\"maxCost\":3}" },
     { name: "json", description: "machine-readable output" },
   ],
-  examples: ["skillrouter route \"audit my authentication changes\"", "skillrouter route \"deploy the app\" --dry-run", "skillrouter route \"write tests\" --apply", "skillrouter route \"migrate the database\" --strategy safe"],
+  examples: ["skillrouter route \"audit my authentication changes\"", "skillrouter route \"deploy the app\" --dry-run", "skillrouter route \"write tests\" --apply", "skillrouter route \"migrate the database\" --strategy safe", "skillrouter route \"scan dependencies\" --constraints '{\"network\":\"forbidden\"}'"],
   handler: async (ctx) => {
     return withApp(ctx, async (app) => {
       const task = ctx.positionals.join(" ");
@@ -53,7 +56,13 @@ export const routeCommand: CommandDef = {
         config = { ...app.config, router: { ...app.config.router, strategy: strategyFlag as RouterStrategy } };
       }
 
-      const routeCtx: RouteContext = { task, cwd: app.cwd, project, git, capabilities, installed, agents, config, metrics: new Map((await app.storage.allMetrics()).map((m) => [m.capabilityId, m])) };
+      const constraints = parseConstraints(ctx.flags["constraints"]);
+      const context = await collectContext(app.cwd, {
+        enabled: app.config.router.context.enabled,
+        timeoutMs: app.config.router.context.timeoutMs,
+      });
+
+      const routeCtx: RouteContext = { task, cwd: app.cwd, project, git, capabilities, installed, agents, config, context, constraints, metrics: new Map((await app.storage.allMetrics()).map((m) => [m.capabilityId, m])) };
       const decision = await new Router().route(routeCtx);
 
       const dryRun = Boolean(ctx.flags["dry-run"]) || app.config.router.mode === "manual";
@@ -69,10 +78,21 @@ export const routeCommand: CommandDef = {
           mode: decision.mode,
           strategy: decision.strategy,
           latencyMs: decision.latencyMs,
+          intent: decision.intent,
+          context: decision.context,
           analysis: decision.analysis,
-          activate: activations.map((a) => ({ id: a.capabilityId, score: a.score, confidence: a.confidence, reasons: a.reasons.map((r) => r.text) })),
+          activate: activations.map((a) => {
+            const candidate = decision.scores.find((s) => s.capability.id === a.capabilityId);
+            return {
+              id: a.capabilityId,
+              score: a.score,
+              confidence: a.confidence,
+              reasons: a.reasons.map((r) => r.text),
+              breakdown: candidate?.scoreBreakdownV2 ?? null,
+            };
+          }),
           deactivate: deactivations.map((a) => ({ id: a.capabilityId, score: a.score })),
-          context: { estimate: decision.contextEstimate, budget: decision.contextBudget },
+          contextUsage: { estimate: decision.contextEstimate, budget: decision.contextBudget },
           dependencies: {
             activationOrder: dependencyCheck.ordered,
             missing: missingInstalledDeps,
@@ -223,6 +243,24 @@ async function detectAgentIds(app: AppContext): Promise<import("../../core/types
   const { detectAll } = await import("../../adapters/env.ts");
   const agents = await detectAll(app.cwd);
   return agents.filter((a) => a.detected).map((a) => a.id);
+}
+
+function parseConstraints(raw: unknown): RouteConstraints | undefined {
+  if (raw === undefined) return undefined;
+  if (typeof raw !== "string") throw new Error("--constraints must be a JSON object string");
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error("--constraints must be valid JSON, e.g. '{\"network\":\"forbidden\"}'");
+  }
+  const allowedKeys = ["network", "maxCost", "maxLatency", "maxLatencyMs", "permissions", "requiredCapabilities", "requiredFramework", "requiredLanguage"];
+  const unknown = Object.keys(parsed as Record<string, unknown>).filter((key) => !allowedKeys.includes(key));
+  if (unknown.length > 0) throw new Error(`--constraints contains unknown key(s): ${unknown.join(", ")}`);
+  if ((parsed as RouteConstraints).network !== undefined && !["allowed", "forbidden"].includes((parsed as RouteConstraints).network!)) {
+    throw new Error("constraints.network must be 'allowed' or 'forbidden'");
+  }
+  return parsed as RouteConstraints;
 }
 
 function renderRoute(decision: import("../../router/types.ts").RouterDecision, task: string, activateCount: number, deactivateCount: number): void {

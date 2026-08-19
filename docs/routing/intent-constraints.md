@@ -89,3 +89,23 @@ metadata:
 skillrouter classify "<task>"          # human-readable
 skillrouter classify "<task>" --json   # { intent, confidence, domain, language, signals, operations }
 ```
+
+## Router integration (Phase F)
+
+- The router auto-classifies intent when none is supplied (`classifyIntent`),
+  and the decision carries it: `decision.intent = { type, confidence }`.
+- Hard constraints are applied in `rank()` **before** scoring; eliminated
+  candidates never appear in `decision.scores`.
+- `requiredCapabilities` are merged into the planner's `always` list, forcing
+  them into the activation set for that route.
+- Matching `requiredLanguage`/`requiredFramework` add a soft preference signal
+  (`preference`, +6 per match) on top of the hard requirement.
+
+```bash
+skillrouter route "<task>" --constraints '{"network":"forbidden","requiredCapabilities":["web-search"]}'
+skillrouter route "<task>" --json        # activate[].breakdown, intent, context fields
+```
+
+`--constraints` accepts a JSON object; unknown keys or malformed JSON are
+rejected. Every activation in `--json` output now includes a normalized 0–1
+`breakdown` (see `docs/routing/scoring.md` §Phase F breakdown).

@@ -144,6 +144,101 @@ test("main route rejects an invalid --strategy", async () => {
   });
 });
 
+test("main route --json surfaces intent, contextUsage and per-activation breakdown", async () => {
+  await withCleanEnv(async () => {
+    const skillDir = join(process.cwd(), "skills", "test-writer");
+    await mkdir(skillDir, { recursive: true });
+    await writeFile(
+      join(skillDir, "skillrouter.yaml"),
+      `schema: skillrouter/v1
+id: test-writer
+name: Test Writer
+version: 1.0.0
+description: Writes unit tests for TypeScript projects
+type: skill
+triggers:
+  keywords: [test, unit, coverage]
+  intents: [write tests, add tests]
+`,
+      "utf8",
+    );
+    capture();
+    try {
+      let code = await main(["source", "add", "cli-src", join(process.cwd(), "skills")]);
+      assert.equal(code, 0);
+      capture();
+      code = await main(["route", "write unit tests for the API", "--json", "--dry-run"]);
+      assert.equal(code, 0);
+      const parsed = JSON.parse(captured.out) as {
+        intent: { type: string; confidence: number };
+        contextUsage: { estimate: number; budget: number };
+        activate: { id: string; breakdown: { total: number } | null }[];
+      };
+      assert.equal(parsed.intent.type, "testing");
+      assert.ok(parsed.intent.confidence > 0);
+      assert.ok(parsed.contextUsage.budget > 0);
+      assert.ok(parsed.activate.some((a) => a.id === "test-writer"));
+      const withBreakdown = parsed.activate.find((a) => a.breakdown !== null);
+      assert.ok(withBreakdown);
+      assert.ok(withBreakdown.breakdown!.total > 0 && withBreakdown.breakdown!.total <= 1);
+    } finally {
+      release();
+    }
+  });
+});
+
+test("main route --constraints eliminates network capabilities and rejects bad JSON", async () => {
+  await withCleanEnv(async () => {
+    const skillDir = join(process.cwd(), "skills", "deployer");
+    await mkdir(skillDir, { recursive: true });
+    await writeFile(
+      join(skillDir, "skillrouter.yaml"),
+      `schema: skillrouter/v1
+id: deployer
+name: Deployer
+version: 1.0.0
+description: builds and deploys applications
+type: skill
+triggers:
+  keywords: [deploy, docker]
+permissions:
+  network:
+    allowed: ["*"]
+`,
+      "utf8",
+    );
+    capture();
+    try {
+      let code = await main(["source", "add", "cli-src", join(process.cwd(), "skills")]);
+      assert.equal(code, 0);
+      capture();
+      code = await main(["route", "deploy the docker image", "--json", "--dry-run", "--constraints", '{"network":"forbidden"}']);
+      assert.equal(code, 0);
+      const parsed = JSON.parse(captured.out) as { activate: { id: string }[]; deactivate: { id: string }[] };
+      const selected = [...parsed.activate, ...parsed.deactivate].map((a) => a.id);
+      assert.ok(!selected.includes("deployer"), "network capability must be eliminated");
+    } finally {
+      release();
+    }
+    capture();
+    try {
+      const code = await main(["route", "write tests", "--dry-run", "--constraints", "not-json"]);
+      assert.equal(code, 1);
+      assert.match(captured.err, /--constraints must be valid JSON/);
+    } finally {
+      release();
+    }
+    capture();
+    try {
+      const code = await main(["route", "write tests", "--dry-run", "--constraints", '{"bogusKey":true}']);
+      assert.equal(code, 1);
+      assert.match(captured.err, /unknown key/);
+    } finally {
+      release();
+    }
+  });
+});
+
 test("main stats reports reliability observations in table and json mode", async () => {
   await withCleanEnv(async () => {
     capture();

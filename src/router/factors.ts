@@ -3,6 +3,7 @@ import type { TaskAnalysis, Signal, FactorBreakdown, CapabilityScore, RouteConte
 import { normalizePhrases } from "../utils/text.ts";
 import { computeRisk } from "../security/risk.ts";
 import { matchesGlob } from "../utils/glob.ts";
+import { softPreferenceDelta } from "../constraints/constraints.ts";
 import type { ProjectAnalysis } from "../project/analyzer.ts";
 import type { RouterStrategy } from "../config/config.ts";
 
@@ -33,6 +34,12 @@ export const W = {
   contextPenaltyPerK: 3,
   contextPenaltyCap: 9,
   permissionPenalty: 12,
+  // Phase F: context-aware matching (PRD2 §8)
+  contextLanguage: 8,
+  contextFramework: 8,
+  contextRuntime: 6,
+  contextMismatchRuntime: -20,
+  intentMatch: 16,
 };
 
 export type Weights = Record<keyof typeof W, number>;
@@ -107,6 +114,7 @@ export function scoreSingleCapability(
   ctx: RouteContext,
   prepared: Prepared,
   weights?: Weights,
+  constraints?: import("../constraints/constraints.ts").RouteConstraints,
 ): Pick<CapabilityScore, "capability" | "score" | "signals" | "breakdown" | "compatibility" | "trust" | "riskLevel" | "conflictWith"> {
   const w = weights ?? W;
   const signals: Signal[] = [];
@@ -124,6 +132,8 @@ export function scoreSingleCapability(
     historical: 0,
     cost: 0,
     latency: 0,
+    context: 0,
+    preference: 0,
     contextCost: 0,
     permissionCost: 0,
     conflict: 0,
@@ -210,6 +220,45 @@ export function scoreSingleCapability(
   const quality = capability.metadata?.quality;
   if (quality !== undefined) add("quality", (quality / 100) * w.qualityFactor, `declared quality ${quality}/100`);
 
+  // --- Intent match (Phase E/F): declared capability categories vs classified intent ---
+  const intent = ctx.intent;
+  if (intent && capability.capabilities && capability.capabilities.length > 0) {
+    const categories = new Set(capability.capabilities.map((c) => c.toLowerCase()));
+    if (categories.has(intent.intent)) {
+      add("taskSimilarity", w.intentMatch, `capability category matches intent "${intent.intent}"`);
+    }
+  }
+
+  // --- Context match (Phase D/F): declared requirements vs normalized context ---
+  if (ctx.context && capability.requirements) {
+    const ctxList = (key: string): string[] => {
+      const value = ctx.context!.fields[key];
+      return Array.isArray(value) ? value : typeof value === "string" ? [value] : [];
+    };
+    const langs = new Set(ctxList("project.language"));
+    const frameworks = new Set(ctxList("project.framework"));
+    const runtime = ctxList("runtime.os")[0] ?? null;
+    const reqLangs = capability.requirements.language ?? [];
+    const reqFrameworks = capability.requirements.framework ?? [];
+    const reqRuntimes = capability.requirements.runtime ?? [];
+
+    const langHits = reqLangs.filter((l) => langs.has(l.toLowerCase()));
+    if (langHits.length > 0) {
+      add("context", Math.min(2, langHits.length) * w.contextLanguage, `context language match: ${langHits.join(", ")}`);
+    }
+    const frameworkHits = reqFrameworks.filter((f) => frameworks.has(f.toLowerCase()));
+    if (frameworkHits.length > 0) {
+      add("context", Math.min(3, frameworkHits.length) * w.contextFramework, `context framework match: ${frameworkHits.join(", ")}`);
+    }
+    if (runtime && reqRuntimes.length > 0) {
+      if (reqRuntimes.includes(runtime)) {
+        add("context", w.contextRuntime, `context runtime match: ${runtime}`);
+      } else if (reqRuntimes.length > 0) {
+        add("context", w.contextMismatchRuntime, `requires runtime(s) ${reqRuntimes.join(", ")} but environment is ${runtime}`);
+      }
+    }
+  }
+
   // --- Historical: fresh dynamic metrics win; declared successRate is the fallback; declared reliability last ---
   const metric = ctx.metrics?.get(capability.id);
   if (metric && metric.tasks > 0) {
@@ -242,6 +291,17 @@ export function scoreSingleCapability(
   const risk = computeRisk(capability);
   const permPenalty = (risk.score / 100) * w.permissionPenalty;
   if (permPenalty > 0) add("permissionCost", -permPenalty, `risk ${risk.score}/100 (${risk.level})`);
+
+  // --- Soft preferences (Phase E): never eliminate, only nudge scores ---
+  if (constraints) {
+    const preference = softPreferenceDelta(capability, constraints);
+    if (preference !== 0) {
+      const reasons: string[] = [];
+      if ((constraints.requiredLanguage ?? []).some((l) => capability.requirements?.language?.includes(l.toLowerCase()))) reasons.push("matches a preferred language");
+      if ((constraints.requiredFramework ?? []).some((f) => capability.requirements?.framework?.includes(f.toLowerCase()))) reasons.push("matches a preferred framework");
+      add("preference", preference, reasons.join(" and "));
+    }
+  }
 
   const raw = Object.values(breakdown).reduce((a, b) => a + b, 0);
   const score = Math.max(0, Math.min(MAX_SCORE, Math.round(raw)));

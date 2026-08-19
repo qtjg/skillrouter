@@ -38,6 +38,8 @@ export interface FactorBreakdown {
   historical: number;
   cost: number;
   latency: number;
+  context: number;
+  preference: number;
   contextCost: number;
   permissionCost: number;
   conflict: number;
@@ -52,6 +54,8 @@ export interface CapabilityScore {
   trust: TrustLevel;
   riskLevel: RiskLevel;
   conflictWith: string | null;
+  /** Normalized 0–1 breakdown (Phase F). */
+  scoreBreakdownV2?: import("../scoring/breakdown.ts").ScoreBreakdown;
 }
 
 export type PlanActionType = "activate" | "deactivate" | "keep" | "suspend" | "keep-inactive";
@@ -72,6 +76,10 @@ export interface RouterDecision {
   mode: string;
   /** Scoring strategy applied (PRD §13/§50). */
   strategy: string;
+  /** Classified task intent (Phase E/F). */
+  intent: { type: string; confidence: number };
+  /** Normalized workspace context (Phase D/F), when collected. */
+  context: Record<string, unknown> | null;
   analysis: TaskAnalysis;
   scores: CapabilityScore[];
   plan: PlanAction[];
@@ -98,6 +106,10 @@ export interface RouteContext {
   metrics?: Map<string, MetricsRow>;
   /** Normalized context for the current workspace (Phase D); optional in tests. */
   context?: import("../context/types.ts").NormalizedContext;
+  /** Classified intent (Phase E); computed by the router when absent. */
+  intent?: import("../intent/classifier.ts").IntentResult;
+  /** Hard + soft task constraints (Phase E); applied before ranking. */
+  constraints?: import("../constraints/constraints.ts").RouteConstraints;
 }
 
 export interface SemanticResult {
