@@ -163,8 +163,20 @@ export interface CapabilityMetadata {
   cost?: number;
   /** Declared latency on a unitless 1–5 scale; used by speed-aware strategies. */
   latency?: number;
+  /** Declared latency in milliseconds; used by maxLatencyMs constraints. */
+  latencyMs?: number;
   /** Declared reliability 0–1; used as the last-resort history proxy. */
   reliability?: number;
+  /** Whether the capability intentionally writes to git (adds `git.write` permission kind). */
+  gitWrites?: boolean;
+}
+
+/** Declared environment requirements (context-aware matching, PRD2 §8). */
+export interface CapabilityRequirements {
+  language?: string[];
+  framework?: string[];
+  runtime?: string[];
+  network?: boolean;
 }
 
 export interface Capability {
@@ -184,6 +196,8 @@ export interface Capability {
   compatibleWith?: string[];
   /** Ordered fallback capability ids to try when this capability fails (PRD §21). */
   fallbacks?: string[];
+  /** Declared environment requirements used by context matching and constraints (PRD2 §8). */
+  requirements?: CapabilityRequirements;
   permissions?: PermissionSet;
   risk?: RiskProfile;
   context?: ContextProfile;

@@ -247,3 +247,20 @@ test("main context --json reports normalized context fields without secrets", as
     else process.env.CI = previous.CI;
   }
 });
+
+test("main classify --json returns intent classification", async () => {
+  await withCleanEnv(async () => {
+    await writeFile(join(process.cwd(), "package.json"), JSON.stringify({ name: "intent-test", dependencies: { react: "18.0.0" } }), "utf8");
+    capture();
+    try {
+      const code = await main(["classify", "fix this React error", "--json"]);
+      assert.equal(code, 0);
+      const parsed = JSON.parse(captured.out) as { intent: string; confidence: number; domain: string | null };
+      assert.equal(parsed.intent, "debugging");
+      assert.ok(parsed.confidence > 0.4);
+      assert.equal(typeof parsed.domain, "string");
+    } finally {
+      release();
+    }
+  });
+});

@@ -126,6 +126,7 @@ Legend: `[x]` done, `[~]` partial, `[ ]` pending.
 - [x] `learn` outcome recording command (failures suggest a declared fallback)
 - [x] Routing strategies (balanced/quality/speed/cheap/minimal/safe) + cost/latency metadata (route `--strategy`, `router.strategy` config, weight presets in `src/router/factors.ts`)
 - [x] Phase D: pluggable context engine (`src/context/`) — providers git/project/runtime/filesystem/package-manager/environment, normalized dotted fields, secret redaction, per-provider timeouts, `skillrouter context`
+- [x] Phase E: intent classifier (`src/intent/`, 10 intents, deterministic confidence) + constraints (`src/constraints/`, hard rejection + permission boundary + soft deltas) + `skillrouter classify`
 - [ ] Cookbook skills: multi-step planning combining router + runtime observations (PRD §14)
 - [ ] Timeline view of routing history (PRD §10, `--timeline`)
 

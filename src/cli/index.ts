@@ -10,6 +10,7 @@ import { logsCommand, verifyCommand, exportCommand, auditCommand, selfTestComman
 import { statsCommand } from "./commands/stats.ts";
 import { learnCommand } from "./commands/learn.ts";
 import { contextCommand } from "./commands/context.ts";
+import { classifyCommand } from "./commands/classify.ts";
 import { pathToFileURL } from "node:url";
 
 export function buildRegistry(): CommandRegistry {
@@ -58,6 +59,7 @@ export function buildRegistry(): CommandRegistry {
   registry.register(learnCommand);
   // Context
   registry.register(contextCommand);
+  registry.register(classifyCommand);
   return registry;
 }
 

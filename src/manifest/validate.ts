@@ -1,5 +1,5 @@
 import { parse } from "yaml";
-import type { Capability, CapabilityType, Compatibility, Dependency, PermissionSet, RiskLevel, TrustLevel } from "../core/types.ts";
+import type { Capability, CapabilityRequirements, CapabilityType, Compatibility, Dependency, PermissionSet, RiskLevel, TrustLevel } from "../core/types.ts";
 import { CAPABILITY_TYPES, RISK_LEVELS } from "../core/types.ts";
 import { ManifestError } from "../utils/errors.ts";
 import { isValidCapabilityId } from "../core/ids.ts";
@@ -383,6 +383,7 @@ export function normalizeManifest(doc: ManifestDoc, manifestPath: string): Capab
     replaces: Array.isArray(doc["replaces"]) ? (doc["replaces"] as unknown[]).map(String) : undefined,
     compatibleWith: Array.isArray(doc["compatibleWith"]) ? (doc["compatibleWith"] as unknown[]).map(String) : undefined,
     fallbacks: Array.isArray(doc["fallbacks"]) ? (doc["fallbacks"] as unknown[]).map(String) : undefined,
+    requirements: normalizeRequirements(doc["requirements"], problems),
     permissions,
     risk: declaredRisk ? { declared: declaredRisk } : undefined,
     context: contextRaw
@@ -406,11 +407,28 @@ export function normalizeManifest(doc: ManifestDoc, manifestPath: string): Capab
           successRate: typeof metadataRaw["successRate"] === "number" ? metadataRaw["successRate"] : undefined,
           cost: metaNum("cost"),
           latency: metaNum("latency"),
+          latencyMs: metaNum("latencyMs"),
           reliability: metaNum("reliability"),
+          gitWrites: typeof metadataRaw?.["gitWrites"] === "boolean" ? metadataRaw["gitWrites"] : typeof doc["gitWrites"] === "boolean" ? doc["gitWrites"] : undefined,
         }
       : undefined,
     resources: stringList(doc["resources"], "resources", problems),
     manifestPath,
+  };
+}
+
+function normalizeRequirements(raw: unknown, problems: Problem[]): CapabilityRequirements | undefined {
+  if (raw === undefined || raw === null) return undefined;
+  if (typeof raw !== "object" || Array.isArray(raw)) {
+    problems.push({ path: "requirements", message: "must be a mapping (language, framework, runtime, network)" });
+    return undefined;
+  }
+  const r = raw as Record<string, unknown>;
+  return {
+    language: stringList(r["language"], "requirements.language", problems),
+    framework: stringList(r["framework"], "requirements.framework", problems),
+    runtime: stringList(r["runtime"], "requirements.runtime", problems),
+    network: typeof r["network"] === "boolean" ? r["network"] : undefined,
   };
 }
 

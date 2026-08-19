@@ -31,7 +31,8 @@ type: skill                 # one of the 14 types below
 | `permissions` | object | Declared permission surface — see [security/permissions.md](../security/permissions.md). |
 | `risk` | object | Declared hint: `level` (`low`\|`medium`\|`high`\|`critical`), `score` (0–100), `reasons` (string[]). The engine only uses it as a **floor**; risk is computed from permissions. |
 | `context` | object | `estimatedTokens` (number), `activationLevel` (0–5), `resources` (string[]). |
-| `metadata` | object | `categories`, `tags` (string arrays), `license`, `author`, `repository`, `homepage` (strings), `quality`, `popularity`, `successRate` (numbers 0–100), `cost`/`latency` (numbers 1–5), `reliability` (number 0–1) — the last three may also be declared at the capability root (PRD §9); `metadata` wins. `cost`/`latency` feed the `cheap`/`speed`/`minimal` strategies, `reliability` is the last-resort history proxy. |
+| `metadata` | object | `categories`, `tags` (string arrays), `license`, `author`, `repository`, `homepage` (strings), `quality`, `popularity`, `successRate` (numbers 0–100), `cost`/`latency` (numbers 1–5), `latencyMs` (exact ms for constraints), `reliability` (number 0–1), `gitWrites` (boolean) — `cost`/`latency`/`reliability` may also be declared at the capability root (PRD §9); `metadata` wins | 
+| `requirements` | object | Declared environment requirements for context matching/constraints: `language`, `framework`, `runtime` (string arrays), `network` (boolean). |
 | `resources` | string[] | Payload directories/files shipped with the capability. |
 | `trust` | string | `verified` \| `trusted` \| `community` \| `unknown` (default) \| `blocked`. |
 | `signature` | object | Added by `skillrouter sign`; see [security/signing.md](../security/signing.md). |
