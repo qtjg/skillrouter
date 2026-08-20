@@ -84,6 +84,10 @@ export interface RetrievalConfig {
   /** Default result count of a retrieval call when topK is not given. */
   topK: number;
   embeddings: EmbeddingsConfig;
+  rerank: {
+    enabled: boolean;
+    provider: string;
+  };
 }
 
 export interface SourcesConfigItem {
@@ -155,6 +159,10 @@ export const DEFAULT_CONFIG: SkillRouterConfig = {
       dimension: 256,
       apiKeyEnv: "OPENAI_API_KEY",
       baseUrl: "https://api.openai.com/v1",
+    },
+    rerank: {
+      enabled: true,
+      provider: "lexical",
     },
   },
   sources: [],
@@ -278,6 +286,12 @@ function validateConfig(config: SkillRouterConfig, path: string): SkillRouterCon
   if (!embeddings.model) throw new ConfigError(`retrieval.embeddings.model in ${path} must not be empty`);
   if (!embeddings.apiKeyEnv) throw new ConfigError(`retrieval.embeddings.apiKeyEnv in ${path} must not be empty`);
   if (!/^https?:\/\//.test(embeddings.baseUrl)) throw new ConfigError(`retrieval.embeddings.baseUrl in ${path} must be an http(s) URL`);
+  if (typeof config.retrieval?.rerank?.enabled !== "boolean") {
+    throw new ConfigError(`retrieval.rerank.enabled in ${path} must be a boolean`);
+  }
+  if (config.retrieval.rerank.provider !== "lexical") {
+    throw new ConfigError(`retrieval.rerank.provider in ${path} must be "lexical"`);
+  }
   for (const item of config.sources) {
     if (!item.name || !["git", "catalog", "directory"].includes(item.type)) {
       throw new ConfigError(`Invalid source entry in ${path}: name and type ("git" | "catalog" | "directory") are required`);

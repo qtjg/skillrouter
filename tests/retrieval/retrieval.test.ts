@@ -184,6 +184,7 @@ test("retrieve fuses sparse and local-dense modalities over a seeded corpus", as
   const config = {
     topK: 5,
     embeddings: { enabled: true, provider: "local" as const, model: "local", dimension: 128, apiKeyEnv: "OPENAI_API_KEY", baseUrl: "https://example.invalid" },
+    rerank: { enabled: true, provider: "lexical" },
   };
 
   const sparseOnly = await retrieve(storage, config, { query: "deploy docker container to the fleet", sources: ["sparse"] });
@@ -213,7 +214,7 @@ test("retrieve returns empty result for empty corpus without throwing", async (t
   const storage = new SqliteStorage(":memory:");
   await storage.init();
   t.after(() => storage.close());
-  const config = { topK: 5, embeddings: { enabled: true, provider: "local" as const, model: "local", dimension: 32, apiKeyEnv: "OPENAI_API_KEY", baseUrl: "https://example.invalid" } };
+  const config = { topK: 5, embeddings: { enabled: true, provider: "local" as const, model: "local", dimension: 32, apiKeyEnv: "OPENAI_API_KEY", baseUrl: "https://example.invalid" }, rerank: { enabled: false, provider: "lexical" } };
   const result = await retrieve(storage, config, { query: "anything" });
   assert.equal(result.hits.length, 0);
   assert.equal(result.total, 0);
@@ -224,7 +225,7 @@ test("refreshEmbeddings is a no-op when embeddings are disabled", async (t) => {
   const storage = new SqliteStorage(":memory:");
   await storage.init();
   t.after(() => storage.close());
-  const config = { topK: 5, embeddings: { enabled: false, provider: "local" as const, model: "local", dimension: 64, apiKeyEnv: "OPENAI_API_KEY", baseUrl: "https://example.invalid" } };
+  const config = { topK: 5, embeddings: { enabled: false, provider: "local" as const, model: "local", dimension: 64, apiKeyEnv: "OPENAI_API_KEY", baseUrl: "https://example.invalid" }, rerank: { enabled: false, provider: "lexical" } };
   const result = await refreshEmbeddings(storage, config);
   assert.equal(result.enabled, false);
   assert.equal(result.embedded, 0);

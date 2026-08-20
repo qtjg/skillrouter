@@ -8,6 +8,8 @@ import { denseSearch } from "./dense.ts";
 import { rrfFuse, type RankedSource } from "./fusion.ts";
 import { resolveEmbeddingProvider } from "./embeddings.ts";
 import type { RetrievalHit, RetrievalRequest, RetrievalResult } from "./types.ts";
+import { OutcomeStore } from "../learning/outcomes.ts";
+import { applyRerank } from "../rerank/index.ts";
 
 const SPARSE_POOL_MULTIPLIER = 3;
 
@@ -39,7 +41,12 @@ export function clearSparseCache(): void {
  * embedded) cosine dense retrieval, fused with Reciprocal Rank Fusion.
  * Deterministic; never throws — degraded modalities simply drop out.
  */
-export async function retrieve(storage: Storage, config: RetrievalConfig, request: RetrievalRequest): Promise<RetrievalResult> {
+export async function retrieve(
+  storage: Storage,
+  config: RetrievalConfig,
+  request: RetrievalRequest,
+  opts: { outcomeLimit?: number } = {},
+): Promise<RetrievalResult> {
   const started = Date.now();
   const query = request.query.trim();
   const topK = request.topK ?? config.topK;
@@ -96,8 +103,14 @@ export async function retrieve(storage: Storage, config: RetrievalConfig, reques
     hit.sectionKind = (kindBySection.get(hit.sectionId ?? "") as RetrievalHit["sectionKind"]) ?? null;
   }
 
-  globalBus.emit({ event: "retrieval.queried", query, hits: fused.length });
-  return { query, hits: fused, sources: requested, provider: providerName, latencyMs: Date.now() - started, total: fused.length };
+  let finalHits: RetrievalHit[] = fused;
+  if (config.rerank?.enabled && fused.length > 1 && query.length > 0) {
+    const summaries = await new OutcomeStore(storage, opts.outcomeLimit ?? 1000).summaries();
+    finalHits = await applyRerank(config.rerank.provider, { query, hits: fused, records, summaries });
+  }
+
+  globalBus.emit({ event: "retrieval.queried", query, hits: finalHits.length });
+  return { query, hits: finalHits, sources: requested, provider: providerName, latencyMs: Date.now() - started, total: finalHits.length };
 }
 
 export interface EmbedRefreshResult {

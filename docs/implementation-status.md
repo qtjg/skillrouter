@@ -57,6 +57,17 @@ Tests: `tests/retrieval/retrieval.test.ts` (9). Events: `retrieval.queried`.
 | `RerankerProvider` contract + pluggable rerankers | MISSING | — | `src/rerank/` interface + default lexical/simple reranker |
 | W-score integration with retrieval results | PARTIAL | `src/router/factors.ts` W scores use manifest fields + outcomes | feed corpus + retrieval signals |
 
+## Phase D3 — Reranking
+
+| Requirement (PRD v2.0) | Status | Existing | Planned change |
+| --- | --- | --- | --- |
+| `RerankerProvider` contract + pluggable rerankers | IMPLEMENTED | `src/rerank/types.ts` + `createRerankerProvider` registry | — |
+| Default deterministic lexical reranker (corpus-informed) | IMPLEMENTED | `src/rerank/lexical.ts` `LexicalReranker`: full-body term coverage, section-kind weighting, keyword bonus, reliability nudge (Phase G), no LLM | — |
+| Perspective-aware reordering without reciprocal link preload | PARTIAL | `src/rerank/index.ts` `applyRerank` reorders fused hits deterministically | add cross-agent ranking in Phase F |
+| Config surface + CLI | IMPLEMENTED | `retrieval.rerank.{enabled,provider}`; `retrieve --no-rerank`; per-hit `rerankScore`/`rerankReason` outputs | — |
+
+Tests: `tests/rerank/rerank.test.ts` (4).
+
 ## Phase D4 — Content Fingerprinting & Deduplication
 
 | Requirement (PRD v2.0) | Status | Existing | Planned change |

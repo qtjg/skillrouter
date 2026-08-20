@@ -10,6 +10,7 @@ export const retrieveCommand: CommandDef = {
   args: [{ name: "query", required: true, description: "free-form search query" }],
   flags: [
     { name: "top-k", type: "number", description: "number of results (default: retrieval.topK in config)" },
+    { name: "no-rerank", description: "disable reranking even if retrieval.rerank.enabled" },
     { name: "json", description: "machine-readable output" },
   ],
   examples: ["skillrouter retrieve \"deploy a docker container\"", "skillrouter retrieve \"rollback stripe refund\" --top-k 5 --json"],
@@ -21,12 +22,19 @@ export const retrieveCommand: CommandDef = {
         return 1;
       }
       const topK = typeof ctx.flags["top-k"] === "number" ? ctx.flags["top-k"] : undefined;
-      const result = await retrieve(app.storage, app.config.retrieval, { query, topK });
+      const reranked = !Boolean(ctx.flags["no-rerank"]) && app.config.retrieval.rerank.enabled;
+      const result = await retrieve(
+        app.storage,
+        { ...app.config.retrieval, rerank: { ...app.config.retrieval.rerank, enabled: reranked } },
+        { query, topK },
+        { outcomeLimit: app.config.learning.maxOutcomes },
+      );
 
       if (ctx.json) {
         jsonOut({
           query: result.query,
           provider: result.provider,
+          reranked,
           latencyMs: result.latencyMs,
           hits: result.hits.map((h) => ({
             capabilityId: h.capabilityId,
@@ -34,6 +42,8 @@ export const retrieveCommand: CommandDef = {
             sectionKind: h.sectionKind,
             matchedSections: h.matchedSections.map((m) => ({ id: m.id, title: m.title })),
             score: Math.round(h.score * 1e6) / 1e6,
+            rerankScore: h.rerankScore === undefined ? null : Math.round(h.rerankScore * 1e6) / 1e6,
+            rerankReason: h.rerankReason ?? null,
             rank: h.rank,
             sources: h.sources,
           })),
@@ -54,11 +64,11 @@ export const retrieveCommand: CommandDef = {
           String(h.rank + 1),
           h.capabilityId,
           h.sectionId ? `${h.matchedSections[0]?.title ?? h.sectionId}` : "—",
-          String(Math.round(h.score * 1e6) / 1e6),
+          String(Math.round((h.rerankScore ?? h.score) * 1e6) / 1e6),
           h.sources.join("+"),
         ]),
       );
-      line("\n" + dim(`${result.hits.length} result(s) · dense: ${result.provider} · ${result.latencyMs}ms`));
+      line("\n" + dim(`${result.hits.length} result(s) · dense: ${result.provider} · ${reranked ? `rerank: ${app.config.retrieval.rerank.provider} · ` : ""}${result.latencyMs}ms`));
       return 0;
     });
   },

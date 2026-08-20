@@ -15,10 +15,14 @@ export interface RetrievalHit {
   sectionKind: CorpusSectionKind | null;
   matchedSections: SectionMatch[];
   score: number;
-  /** 0-based rank after fusion. */
+  /** 0-based rank after fusion/rerank. */
   rank: number;
   /** Sources that contributed to this hit. */
   sources: RetrievalSourceType[];
+  /** Reranker confidence in [0,1], when reranking is enabled. */
+  rerankScore?: number;
+  /** Human-readable rerank rationale. */
+  rerankReason?: string;
 }
 
 export interface RetrievalRequest {
