@@ -1,6 +1,7 @@
 import type { Capability } from "../core/types.ts";
 import { tokenize } from "../utils/text.ts";
 import { sha256Hex, stableStringify } from "./fingerprint.ts";
+import { featureHashOf } from "../fingerprint/shingle.ts";
 import type { CapabilityCorpusRecord, CorpusSection } from "./types.ts";
 
 const STOPWORDS = new Set(["a", "an", "the", "of", "for", "in", "on", "with", "and", "or", "to", "from", "as", "is", "are", "be", "by", "at", "using", "use", "you", "your"]);
@@ -63,7 +64,7 @@ export function buildCorpusRecord(capability: Capability, sections: CorpusSectio
     }),
   );
 
-  return {
+  const record: Omit<CapabilityCorpusRecord, "featureHash"> = {
     capabilityId: capability.id,
     name: capability.name,
     version: capability.version,
@@ -81,4 +82,6 @@ export function buildCorpusRecord(capability: Capability, sections: CorpusSectio
     metadataHash,
     indexedAt: now,
   };
+
+  return { ...record, featureHash: featureHashOf(record) };
 }

@@ -76,6 +76,16 @@ Tests: `tests/rerank/rerank.test.ts` (4).
 | Near-duplicate detection across capabilities | MISSING | `src/router/graph.ts` `replaces/conflicts` only | similarity/dedup pass + `skillrouter duplicates` |
 | Duplicate reporting CLI | MISSING | — | TBD |
 
+## Phase D4 — Content Fingerprinting & Deduplication
+
+| Requirement (PRD v2.0) | Status | Existing | Planned change |
+| --- | --- | --- | --- |
+| `CapabilityFingerprint` (semantic + content hashes) | IMPLEMENTED | `CapabilityCorpusRecord` carries `contentHash`, `metadataHash` and 64-bit SimHash `featureHash` (`src/fingerprint/shingle.ts`) | — |
+| Near-duplicate detection | IMPLEMENTED | shingle-set (unigram+trigram) Dice similarity per capability; `findDuplicates` pair + cluster reports, deterministic ordering | — |
+| Duplicate reporting CLI | IMPLEMENTED | `skillrouter duplicates [--threshold 0..1] [--capability] [--json]` (default 0.85) | — |
+
+Tests: `tests/fingerprint/fingerprint.test.ts` (5).
+
 ## Phase D5 — Capability Composition / DAG
 
 | Requirement (PRD v2.0) | Status | Existing | Planned change |

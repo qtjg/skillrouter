@@ -44,6 +44,8 @@ export interface CapabilityCorpusRecord {
   contentHash: string;
   /** Fingerprint over the canonical capability metadata. */
   metadataHash: string;
+  /** 64-bit SimHash over the body shingles; used for near-duplicate detection. */
+  featureHash: string;
   indexedAt: string;
 }
 

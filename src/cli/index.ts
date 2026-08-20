@@ -14,6 +14,7 @@ import { contextCommand } from "./commands/context.ts";
 import { classifyCommand } from "./commands/classify.ts";
 import { indexCommand } from "./commands/corpus.ts";
 import { retrieveCommand } from "./commands/retrieve.ts";
+import { duplicatesCommand } from "./commands/duplicates.ts";
 import { pathToFileURL } from "node:url";
 
 export function buildRegistry(): CommandRegistry {
@@ -30,6 +31,7 @@ export function buildRegistry(): CommandRegistry {
   // Corpus
   registry.register(indexCommand);
   registry.register(retrieveCommand);
+  registry.register(duplicatesCommand);
   // Capabilities
   registry.register(installCommand);
   registry.register(uninstallCommand);

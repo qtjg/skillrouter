@@ -28,6 +28,7 @@ function corpusRecord(capabilityId: string, sections: CorpusSection[], keywords:
     bodyTokens: Math.ceil(body.length / 4),
     contentHash: `hash-${capabilityId}`,
     metadataHash: `meta-${capabilityId}`,
+    featureHash: `feature-${capabilityId}`,
     indexedAt: "2026-08-20T00:00:00.000Z",
   };
 }

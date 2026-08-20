@@ -36,6 +36,7 @@ function record(capabilityId: string, sections: CorpusSection[], opts: Partial<C
     bodyTokens: Math.ceil(body.length / 4),
     contentHash: `content-${capabilityId}`,
     metadataHash: `meta-${capabilityId}`,
+    featureHash: `feature-${capabilityId}`,
     indexedAt: "2026-08-20T00:00:00.000Z",
     ...opts,
   };
