@@ -101,8 +101,10 @@ Tests: `tests/plan/plan.test.ts` (10).
 
 | Requirement (PRD v2.0) | Status | Existing | Planned change |
 | --- | --- | --- | --- |
-| Detect capability gaps in retrieval/planning | PARTIAL | `docs/architecture/gap-analysis.md`, gap notes in planner | programmatic `CapabilityGap` analysis over corpus terms |
-| Acquisition suggestions (source search) | PARTIAL | `search` + sources | gap-driven acquisition command `skillrouter gaps` |
+| Detect capability gaps in retrieval/planning | IMPLEMENTED | `src/gaps/` — frequency-weighted corpus gap ranking (score = frequency / (1 + coverage)) over weakly-answered routing history vs corpus sections, deterministic | — |
+| Acquisition suggestions | IMPLEMENTED | `skillrouter gaps [--limit|--min-frequency|--history-limit|--json]` with suggested acquisition query; empty-history / no-gap fast paths | — |
+
+Tests: `tests/gaps/gaps.test.ts` (5).
 
 ## Phase D7 — Preflight Execution Validation
 
