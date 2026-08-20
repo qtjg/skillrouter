@@ -90,9 +90,12 @@ Tests: `tests/fingerprint/fingerprint.test.ts` (5).
 
 | Requirement (PRD v2.0) | Status | Existing | Planned change |
 | --- | --- | --- | --- |
-| `PlanNode` / plan DAG representation | EXISTS | planner (`src/router/planner.ts`) produces ordered steps | explicit `PlanNode` DAG model per PRD |
-| Cross-capability composition from `capabilities[]` | PARTIAL | `capabilities` + planner `always` plumbing | DAG cycles/semantics per PRD |
-| Validation of composition (supported by full body) | MISSING | — | corpus-informed validation |
+| `PlanNode` / plan DAG representation | IMPLEMENTED | explicit `PlanNode` DAG (`src/plan/types.ts`) with root/capability nodes, depth/order/status | — |
+| Cross-capability composition from `capabilities[]` | IMPLEMENTED | `buildPlanDag` expands `capabilities[]` transitively (single node per shared dep), `enhances`/`conflicts`/`fallbacks` as typed links | — |
+| Validation of composition | IMPLEMENTED | cycle detection (DFS), unresolvable requires (`missing`), declared conflicts, unresolved-relation warnings; `classifyStatuses` marks nodes; `linearize` dependency-first order | — |
+| Plan CLI | IMPLEMENTED | `skillrouter plan [<capability-id> ...] [--json]` renders tree, execution order, validity report (exit 2 on invalid) | — |
+
+Tests: `tests/plan/plan.test.ts` (10).
 
 ## Phase D6 — Gap Analysis & Acquisition
 
@@ -147,7 +150,8 @@ Tests: `tests/fingerprint/fingerprint.test.ts` (5).
 
 ## Commits
 
+- `529945e` Phase D4 content fingerprinting & deduplication
+- `4ad80e9` Phase D3 corpus-informed reranking
+- `ef7bdba` Phase D1 capability corpus foundation
+- `4be631d` Phase D2 hybrid retrieval
 - `8b62290` docs: add master product requirements (repo baseline for PRD v2.0)
-- `7dbb11a` Phase G self-learning (outcomes/reputation)
-- `cf5db4c` Phase F advanced scoring
-- … earlier phases A–E
