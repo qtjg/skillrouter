@@ -38,7 +38,7 @@ export async function indexCorpus(storage: Storage, repoRoot: string, cwd: strin
         result.skipped += 1;
         continue;
       }
-      const extracted = await extractSections(location.dir);
+      const extracted = await extractSections(location.dir, capability.id);
       const record = buildCorpusRecord(capability, extracted.sections, new Date().toISOString());
 
       const stored = await storage.getCorpusRecord(capability.id);

@@ -64,6 +64,28 @@ export interface AgentsConfig {
   generic: boolean;
 }
 
+export type EmbeddingProviderName = "local" | "openai";
+
+export interface EmbeddingsConfig {
+  enabled: boolean;
+  /** "local" = deterministic hashing embeddings (offline); "openai" = API-backed with local fallback. */
+  provider: EmbeddingProviderName;
+  /** Model name for API-backed providers. */
+  model: string;
+  /** Vector length for local embeddings / requested dimensionality for API providers. */
+  dimension: number;
+  /** Env var holding the API key (used when provider !== "local"). */
+  apiKeyEnv: string;
+  /** Base URL for OpenAI-compatible embeddings endpoints. */
+  baseUrl: string;
+}
+
+export interface RetrievalConfig {
+  /** Default result count of a retrieval call when topK is not given. */
+  topK: number;
+  embeddings: EmbeddingsConfig;
+}
+
 export interface SourcesConfigItem {
   name: string;
   type: "git" | "catalog" | "directory";
@@ -79,6 +101,7 @@ export interface SkillRouterConfig {
   security: SecurityConfig;
   learning: LearningConfig;
   agents: AgentsConfig;
+  retrieval: RetrievalConfig;
   sources: SourcesConfigItem[];
 }
 
@@ -123,6 +146,17 @@ export const DEFAULT_CONFIG: SkillRouterConfig = {
     mcp: false,
     generic: true,
   },
+  retrieval: {
+    topK: 10,
+    embeddings: {
+      enabled: false,
+      provider: "local",
+      model: "text-embedding-3-small",
+      dimension: 256,
+      apiKeyEnv: "OPENAI_API_KEY",
+      baseUrl: "https://api.openai.com/v1",
+    },
+  },
   sources: [],
 };
 
@@ -163,6 +197,8 @@ function sanitize(value: unknown): unknown {
   }
   return undefined;
 }
+
+export const EMBEDDING_PROVIDERS: EmbeddingProviderName[] = ["local", "openai"];
 
 export async function loadConfig(cwd = process.cwd()): Promise<{ config: SkillRouterConfig; projectConfigPath: string | null; globalConfigPath: string }> {
   const { projectConfig, globalConfig, stateDir } = configPaths(cwd);
@@ -226,6 +262,22 @@ function validateConfig(config: SkillRouterConfig, path: string): SkillRouterCon
   if (typeof maxOutcomes !== "number" || !Number.isFinite(maxOutcomes) || maxOutcomes < 10 || maxOutcomes > 100000) {
     throw new ConfigError(`learning.maxOutcomes in ${path} must be a number between 10 and 100000`);
   }
+  if (typeof config.retrieval?.topK !== "number" || !Number.isFinite(config.retrieval.topK) || config.retrieval.topK < 1 || config.retrieval.topK > 100) {
+    throw new ConfigError(`retrieval.topK in ${path} must be a number between 1 and 100`);
+  }
+  const embeddings = config.retrieval?.embeddings;
+  if (typeof embeddings?.enabled !== "boolean") {
+    throw new ConfigError(`retrieval.embeddings.enabled in ${path} must be a boolean`);
+  }
+  if (!EMBEDDING_PROVIDERS.includes(embeddings.provider)) {
+    throw new ConfigError(`retrieval.embeddings.provider in ${path} must be one of ${EMBEDDING_PROVIDERS.join(", ")}`);
+  }
+  if (typeof embeddings.dimension !== "number" || !Number.isFinite(embeddings.dimension) || embeddings.dimension < 64 || embeddings.dimension > 4096) {
+    throw new ConfigError(`retrieval.embeddings.dimension in ${path} must be a number between 64 and 4096`);
+  }
+  if (!embeddings.model) throw new ConfigError(`retrieval.embeddings.model in ${path} must not be empty`);
+  if (!embeddings.apiKeyEnv) throw new ConfigError(`retrieval.embeddings.apiKeyEnv in ${path} must not be empty`);
+  if (!/^https?:\/\//.test(embeddings.baseUrl)) throw new ConfigError(`retrieval.embeddings.baseUrl in ${path} must be an http(s) URL`);
   for (const item of config.sources) {
     if (!item.name || !["git", "catalog", "directory"].includes(item.type)) {
       throw new ConfigError(`Invalid source entry in ${path}: name and type ("git" | "catalog" | "directory") are required`);

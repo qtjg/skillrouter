@@ -36,6 +36,20 @@ Tests: `tests/corpus/corpus.test.ts` (12). Events: `corpus.indexed`.
 | Fusion (e.g. RRF) of sparse + dense results | MISSING | — | `fusion.ts`, `RetrievalRequest/Result` contract |
 | `skillrouter retrieve <query>` CLI / library call | MISSING | `search` command | new command + doc |
 
+## Phase D2 — Hybrid Retrieval
+
+| Requirement (PRD v2.0) | Status | Existing | Planned change |
+| --- | --- | --- | --- |
+| Sparse retrieval (BM25-style) over full corpus bodies/sections | IMPLEMENTED | `src/retrieval/sparse.ts` `Bm25Index` (k1=1.2, b=0.75, deterministic) over corpus sections | — |
+| `EmbeddingProvider` contract + pluggable providers | IMPLEMENTED | `EmbeddingProvider` in `src/retrieval/types.ts`; `LocalEmbeddingProvider` (feature hashing, offline) + `OpenAiEmbeddingProvider` (OpenAI-compatible `/embeddings`) with automatic local fallback | — |
+| Dense retrieval + vector store | IMPLEMENTED | migration 5 `embeddings` table; `src/retrieval/dense.ts` cosine search, per-capability aggregation | — |
+| Fusion (RRF) of sparse + dense results | IMPLEMENTED | `src/retrieval/fusion.ts` (`rrfFuse`, k=60, deterministic tie-breaks) | — |
+| `RetrievalRequest/Result` contracts | IMPLEMENTED | `src/retrieval/types.ts` | — |
+| `skillrouter retrieve <query>` CLI / library call | IMPLEMENTED | `src/cli/commands/retrieve.ts` (`--top-k`, `--json`); embeddings refresh wired into `skillrouter index` | — |
+| Config surface | IMPLEMENTED | `retrieval.{topK,embeddings.{enabled,provider,model,dimension,apiKeyEnv,baseUrl}}` + validation | — |
+
+Tests: `tests/retrieval/retrieval.test.ts` (9). Events: `retrieval.queried`.
+
 ## Phase D3 — Reranking
 
 | Requirement (PRD v2.0) | Status | Existing | Planned change |

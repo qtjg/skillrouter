@@ -112,8 +112,10 @@ export interface ExtractionResult {
  * Extracts the full body of a capability from its content root: manifest
  * prose, SKILL.md, README, instructions/, docs/ and examples/ text files.
  * Deterministic: paths are sorted, budgets are applied, marks no changes.
+ * When `capabilityId` is given, section ids are namespaced with it so they are
+ * globally unique (required for the embeddings table PK).
  */
-export async function extractSections(dir: string): Promise<ExtractionResult> {
+export async function extractSections(dir: string, capabilityId?: string): Promise<ExtractionResult> {
   const allFiles = (await walkFiles(dir, { ignore: [], maxDepth: 6 })).sort();
   const sections: CorpusSection[] = [];
   let totalBytes = 0;
@@ -139,13 +141,13 @@ export async function extractSections(dir: string): Promise<ExtractionResult> {
     if (!text) continue;
 
     if (kind === "manifest") {
-      sections.push(mkSection(rel, "Manifest", kind, 0, text));
+      sections.push(mkSection(rel, "Manifest", kind, 0, text, 1, capabilityId));
       continue;
     }
 
     const parts = splitMarkdown(text);
     if (parts.length === 0) {
-      sections.push(mkSection(rel, titleOf(fileName), kind, 0, text));
+      sections.push(mkSection(rel, titleOf(fileName), kind, 0, text, 1, capabilityId));
       continue;
     }
     const seen = new Map<string, number>();
@@ -153,7 +155,7 @@ export async function extractSections(dir: string): Promise<ExtractionResult> {
       const slug = slugify(part.title) || "top";
       const n = (seen.get(slug) ?? 0) + 1;
       seen.set(slug, n);
-      sections.push(mkSection(rel, part.title, kind, part.level, part.body, n));
+      sections.push(mkSection(rel, part.title, kind, part.level, part.body, n, capabilityId));
     }
   }
 
@@ -166,9 +168,10 @@ export async function extractSections(dir: string): Promise<ExtractionResult> {
   };
 }
 
-function mkSection(relPath: string, title: string, kind: CorpusSectionKind, level: number, rawBody: string, ordinal = 1): CorpusSection {
+function mkSection(relPath: string, title: string, kind: CorpusSectionKind, level: number, rawBody: string, ordinal = 1, capabilityId?: string): CorpusSection {
   const body = prepareText(rawBody);
-  const id = `${relPath.split(sep).join("/")}::${slugify(title) || "top"}::${ordinal}`;
+  const prefix = capabilityId ? `${capabilityId}::` : "";
+  const id = `${prefix}${relPath.split(sep).join("/")}::${slugify(title) || "top"}::${ordinal}`;
   return { id, title, kind, source: relPath.split(sep).join("/"), level, body, tokens: estimateTokens(body) };
 }
 

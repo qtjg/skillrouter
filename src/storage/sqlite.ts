@@ -3,7 +3,7 @@ import { dirname } from "node:path";
 import type { Capability, CapabilityState, TrustLevel } from "../core/types.ts";
 import { ensureDir } from "../utils/fs.ts";
 import { SkillRouterError } from "../utils/errors.ts";
-import { installedAgentsJson, parseAgentsJson, type Storage, type InstalledCapabilityRow, type RoutingHistoryRow, type AuditRow, type PreferenceRow, type TrustRow, type RouterCacheRow, type MetricsRow, type SkillOutcomeRow } from "./types.ts";
+import { installedAgentsJson, parseAgentsJson, type Storage, type InstalledCapabilityRow, type RoutingHistoryRow, type AuditRow, type PreferenceRow, type TrustRow, type RouterCacheRow, type MetricsRow, type SkillOutcomeRow, type EmbeddingRow } from "./types.ts";
 import type { CapabilityCorpusRecord } from "../corpus/types.ts";
 
 function toHistoryRow(raw: Record<string, unknown>): RoutingHistoryRow {
@@ -138,6 +138,19 @@ const MIGRATIONS: string[] = [
     body_tokens INTEGER NOT NULL DEFAULT 0,
     indexed_at TEXT NOT NULL
   );
+  `,
+  // migration 5: dense section embeddings for hybrid retrieval (PRD v2.0 D2)
+  `
+  CREATE TABLE embeddings (
+    section_id TEXT PRIMARY KEY,
+    capability_id TEXT NOT NULL,
+    vector TEXT NOT NULL,
+    dimension INTEGER NOT NULL,
+    model TEXT NOT NULL,
+    record_hash TEXT NOT NULL,
+    created_at TEXT NOT NULL
+  );
+  CREATE INDEX idx_embeddings_capability ON embeddings(capability_id);
   `,
 ];
 
@@ -465,5 +478,44 @@ export class SqliteStorage implements Storage {
 
   async removeCorpusRecord(capabilityId: string): Promise<void> {
     this.connection.prepare("DELETE FROM corpus_records WHERE capability_id = ?").run(capabilityId);
+  }
+
+  private toEmbeddingRow(row: Record<string, unknown>): EmbeddingRow {
+    return {
+      sectionId: String(row.section_id),
+      capabilityId: String(row.capability_id),
+      vector: JSON.parse(String(row.vector)) as number[],
+      dimension: Number(row.dimension),
+      model: String(row.model),
+      recordHash: String(row.record_hash),
+      createdAt: String(row.created_at),
+    };
+  }
+
+  async upsertEmbedding(row: EmbeddingRow): Promise<void> {
+    this.connection
+      .prepare(
+        `INSERT INTO embeddings (section_id, capability_id, vector, dimension, model, record_hash, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT(section_id) DO UPDATE SET
+           capability_id = excluded.capability_id, vector = excluded.vector,
+           dimension = excluded.dimension, model = excluded.model,
+           record_hash = excluded.record_hash, created_at = excluded.created_at`,
+      )
+      .run(row.sectionId, row.capabilityId, JSON.stringify(row.vector), row.dimension, row.model, row.recordHash, row.createdAt);
+  }
+
+  async allEmbeddings(): Promise<EmbeddingRow[]> {
+    const rows = this.connection.prepare("SELECT * FROM embeddings").all() as unknown as Array<Record<string, unknown>>;
+    return rows.map((r) => this.toEmbeddingRow(r));
+  }
+
+  async embeddingsByCapability(capabilityId: string): Promise<EmbeddingRow[]> {
+    const rows = this.connection.prepare("SELECT * FROM embeddings WHERE capability_id = ?").all(capabilityId) as unknown as Array<Record<string, unknown>>;
+    return rows.map((r) => this.toEmbeddingRow(r));
+  }
+
+  async removeEmbeddingsByCapability(capabilityId: string): Promise<void> {
+    this.connection.prepare("DELETE FROM embeddings WHERE capability_id = ?").run(capabilityId);
   }
 }

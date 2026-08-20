@@ -61,8 +61,7 @@ export interface MetricsRow {
   lastUpdated: string;
 }
 
-/**
- * One execution outcome (PRD §22/§23): latency, verification and user rating
+/** One execution outcome (PRD §22/§23): latency, verification and user rating
  * beyond the plain success/failure aggregates in {@link MetricsRow}.
  */
 export interface SkillOutcomeRow {
@@ -76,6 +75,19 @@ export interface SkillOutcomeRow {
   ts: string;
   /** Free-form context (strategy, model, …) as JSON. */
   context: string | null;
+}
+
+/** Persisted dense embedding for one corpus section (PRD v2.0 D2). */
+export interface EmbeddingRow {
+  sectionId: string;
+  capabilityId: string;
+  vector: number[];
+  dimension: number;
+  /** Provider/model that produced the vector ("local" | "openai:<model>"). */
+  model: string;
+  /** Capability corpus content hash at embedding time (invalidation). */
+  recordHash: string;
+  createdAt: string;
 }
 
 export interface Storage {
@@ -126,6 +138,11 @@ export interface Storage {
   upsertCorpusRecord(record: CapabilityCorpusRecord): Promise<void>;
   allCorpusRecords(): Promise<CapabilityCorpusRecord[]>;
   removeCorpusRecord(capabilityId: string): Promise<void>;
+
+  upsertEmbedding(row: EmbeddingRow): Promise<void>;
+  allEmbeddings(): Promise<EmbeddingRow[]>;
+  embeddingsByCapability(capabilityId: string): Promise<EmbeddingRow[]>;
+  removeEmbeddingsByCapability(capabilityId: string): Promise<void>;
 }
 
 export function installedAgentsJson(agents: string[]): string {

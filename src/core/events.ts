@@ -5,6 +5,7 @@ export type SkillRouterEvent =
   | { event: "git.changed"; files: string[] }
   | { event: "capability.discovered"; id: string; source: string }
   | { event: "corpus.indexed"; id: string; changed: boolean }
+  | { event: "retrieval.queried"; query: string; hits: number }
   | { event: "capability.installed"; id: string; version: string }
   | { event: "capability.activated"; id: string; agent: string }
   | { event: "capability.failed"; id: string; error: string }
