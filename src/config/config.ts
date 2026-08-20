@@ -24,6 +24,13 @@ export interface RouterConfig {
   model: string | null;
   maxActivations: number;
   strategy: RouterStrategy;
+  /** NO_MATCH/WEAK_MATCH/GOOD_MATCH/EXACT_MATCH boundaries (PRD §12). */
+  classificationThresholds: {
+    noMatch: number;
+    weak: number;
+    good: number;
+    exact: number;
+  };
   context: {
     enabled: boolean;
     timeoutMs: number;
@@ -122,6 +129,12 @@ export const DEFAULT_CONFIG: SkillRouterConfig = {
     model: null,
     maxActivations: 5,
     strategy: "balanced",
+    classificationThresholds: {
+      noMatch: 25,
+      weak: 50,
+      good: 75,
+      exact: 90,
+    },
     context: {
       enabled: true,
       timeoutMs: 1000,
@@ -253,6 +266,18 @@ function validateConfig(config: SkillRouterConfig, path: string): SkillRouterCon
   }
   if (typeof config.router.threshold !== "number" || config.router.threshold < 0 || config.router.threshold > 100) {
     throw new ConfigError(`router.threshold in ${path} must be a number between 0 and 100`);
+  }
+  const ct = config.router.classificationThresholds ?? {};
+  for (const [key, value] of Object.entries(ct) as Array<[string, unknown]>) {
+    if (typeof value !== "number" || !Number.isFinite(value) || value < 0 || value > 100) {
+      throw new ConfigError(`router.classificationThresholds.${key} in ${path} must be a number between 0 and 100`);
+    }
+  }
+  const ordered = [ct.noMatch, ct.weak, ct.good, ct.exact].every(
+    (_, i, arr) => i === 0 || (arr[i - 1]! <= arr[i]!),
+  );
+  if (typeof ct.noMatch === "number" && !ordered) {
+    throw new ConfigError(`router.classificationThresholds in ${path} must be ordered noMatch <= weak <= good <= exact`);
   }
   if (config.router.maxActivations < 0) throw new ConfigError(`router.maxActivations in ${path} must be >= 0`);
   if (typeof config.learning?.enabled !== "boolean") {

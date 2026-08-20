@@ -76,6 +76,16 @@ export interface RouterDecision {
   mode: string;
   /** Scoring strategy applied (PRD §13/§50). */
   strategy: string;
+  /** NO_MATCH/WEAK_MATCH/GOOD_MATCH/EXACT_MATCH (PRD §12). */
+  classification: "NO_MATCH" | "WEAK_MATCH" | "GOOD_MATCH" | "EXACT_MATCH";
+  /** Numeric calibrated confidence (PRD §14). */
+  confidence: { value: number; label: "low" | "medium" | "high"; calibrationVersion: string };
+  /** Disambiguation question when top candidates are close (PRD §13); null when unambiguous. */
+  clarification: {
+    question: string;
+    options: Array<{ id: string; label: string }>;
+    resolves: string[];
+  } | null;
   /** Classified task intent (Phase E/F). */
   intent: { type: string; confidence: number };
   /** Normalized workspace context (Phase D/F), when collected. */

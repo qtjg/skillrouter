@@ -2,6 +2,8 @@ import type { PlanAction, RouterDecision, CapabilityScore, RouteContext, TaskAna
 import type { CapabilityState } from "../core/types.ts";
 import { resolveConflicts } from "./conflicts.ts";
 import { resolveFallbackChains } from "./fallback.ts";
+import { classifyResult } from "../classification/classifier.ts";
+import { buildClarification } from "../clarification/clarifier.ts";
 
 export interface PlannerOptions {
   threshold: number;
@@ -142,11 +144,24 @@ export function createDecision(
     if (chain) fallbacks[action.capabilityId] = chain.filter((id) => known.has(id)).slice(0, 5);
   }
 
+  const samples = ctx.outcomes ? [...ctx.outcomes.values()].map((o) => ({ successRate: o.successRate, usage: o.usage })) : [];
+  const selectedScores = plan.filter((a) => a.action === "activate" || a.action === "keep").map((a) => a.score);
+  const topScore = selectedScores.length > 0 ? Math.max(...selectedScores) : 0;
+  const classificationResult = classifyResult(topScore, samples, ctx.config.router.classificationThresholds);
+
+  const topCandidates = scoresSort(scores)
+    .slice(0, 3)
+    .map((s) => ({ id: s.capability.id, label: s.capability.name, score: s.score }));
+  const clarification = buildClarification(topCandidates, { margin: 6, maxOptions: 3, minResolvableGap: 4 });
+
   return {
     decisionId: randomId(),
     task,
     mode: options.mode,
     strategy: ctx.config.router.strategy,
+    classification: classificationResult.class,
+    confidence: classificationResult.confidence,
+    clarification,
     intent: ctx.intent ? { type: ctx.intent.intent, confidence: ctx.intent.confidence } : { type: "analysis", confidence: 0.05 },
     context: ctx.context?.fields ?? null,
     analysis,

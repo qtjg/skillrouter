@@ -1,6 +1,6 @@
 import type { CliContext, CommandDef } from "../framework.ts";
 import { withApp, type AppContext } from "../context.ts";
-import { section, line, ok, info, warning, fail, jsonOut, dim, bold, green, emoji, riskColor, promptYesNo } from "../output.ts";
+import { section, line, ok, info, warning, fail, jsonOut, dim, bold, green, yellow, cyan, red, emoji, riskColor, promptYesNo } from "../output.ts";
 import { Router } from "../../router/index.ts";
 import { expandDependencies } from "../../router/dependency-resolver.ts";
 import { analyzeProject } from "../../project/analyzer.ts";
@@ -81,6 +81,9 @@ export const routeCommand: CommandDef = {
           decisionId: decision.decisionId,
           mode: decision.mode,
           strategy: decision.strategy,
+          classification: decision.classification,
+          confidence: decision.confidence,
+          clarification: decision.clarification,
           latencyMs: decision.latencyMs,
           intent: decision.intent,
           context: decision.context,
@@ -271,6 +274,9 @@ function renderRoute(decision: import("../../router/types.ts").RouterDecision, t
   section("Task analyzed");
   line(`  ${bold(task)}`);
   line("");
+  const matchColor = decision.classification === "EXACT_MATCH" ? green : decision.classification === "NO_MATCH" ? red : decision.classification === "WEAK_MATCH" ? yellow : cyan;
+  line(`  ${dim("match        ")} ${matchColor(decision.classification)} (top score ${decision.classification === "NO_MATCH" ? "—" : decision.scores[0]?.score + "/100"})`);
+  line(`  ${dim("confidence   ")} ${(decision.confidence.value * 100).toFixed(0)}% ${decision.confidence.label} (calibration ${decision.confidence.calibrationVersion})`);
   const domains = decision.analysis.domains.length > 0 ? decision.analysis.domains.join(", ") : dim("none");
   const technologies = decision.analysis.technologies.length > 0 ? decision.analysis.technologies.join(", ") : dim("none");
   const operations = decision.analysis.operations.join(", ");
@@ -278,6 +284,12 @@ function renderRoute(decision: import("../../router/types.ts").RouterDecision, t
   line(`  ${dim("technologies ")} ${technologies}`);
   line(`  ${dim("operations   ")} ${operations}`);
   line(`  ${dim("risk         ")} ${riskColor(decision.analysis.riskEstimate)}`);
+  if (decision.clarification) {
+    line("");
+    line(`  ${bold("Clarification needed")}:`);
+    line(`    ${decision.clarification.question}`);
+    for (const option of decision.clarification.options) line(`    ${dim(`[${option.id}] ${option.label}`)}`);
+  }
   line("");
   if (activateCount > 0) {
     line(`  ${bold("Would activate")}:`);
