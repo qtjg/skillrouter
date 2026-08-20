@@ -94,8 +94,10 @@ Tests: `tests/fingerprint/fingerprint.test.ts` (5).
 | Cross-capability composition from `capabilities[]` | IMPLEMENTED | `buildPlanDag` expands `capabilities[]` transitively (single node per shared dep), `enhances`/`conflicts`/`fallbacks` as typed links | — |
 | Validation of composition | IMPLEMENTED | cycle detection (DFS), unresolvable requires (`missing`), declared conflicts, unresolved-relation warnings; `classifyStatuses` marks nodes; `linearize` dependency-first order | — |
 | Plan CLI | IMPLEMENTED | `skillrouter plan [<capability-id> ...] [--json]` renders tree, execution order, validity report (exit 2 on invalid) | — |
+| Task decomposition (PRD §14) | IMPLEMENTED | `src/task/decompose.ts`: explicit sequence splitting ("a, then b") or deterministic cookbook recipes keyed by operation (up to 2 operations combined, dedup); every subtask carries domains/technologies for independent routing; `skillrouter decompose "<task>" [--json]` | — |
+| Workflow planning (PRD §14) | IMPLEMENTED | `src/workflow/planner.ts`: routes each subtask through the Router, picks best above-threshold capability per step, composes the routed set into a validated DAG and annotates per-step `requires` dependencies; `skillrouter workflow "<task>" [--json]` | — |
 
-Tests: `tests/plan/plan.test.ts` (10).
+Tests: `tests/plan/plan.test.ts` (10), `tests/task/decompose.test.ts` (6), `tests/workflow/planner.test.ts` (6).
 
 ## Phase D6 — Gap Analysis & Acquisition
 

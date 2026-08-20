@@ -246,7 +246,7 @@ export const explainCommand: CommandDef = {
   },
 };
 
-async function detectAgentIds(app: AppContext): Promise<import("../../core/types.ts").AgentId[]> {
+export async function detectAgentIds(app: AppContext): Promise<import("../../core/types.ts").AgentId[]> {
   const { detectAll } = await import("../../adapters/env.ts");
   const agents = await detectAll(app.cwd);
   return agents.filter((a) => a.detected).map((a) => a.id);

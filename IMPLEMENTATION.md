@@ -129,7 +129,8 @@ Legend: `[x]` done, `[~]` partial, `[ ]` pending.
 - [x] Phase E: intent classifier (`src/intent/`, 10 intents, deterministic confidence) + constraints (`src/constraints/`, hard rejection + permission boundary + soft deltas) + `skillrouter classify`
 - [x] Quality analyzer (PRD §8): `src/quality/analyzer.ts` — declared quality authoritative, else derived from completeness/reliability/outcome history; feeds the router `quality` factor; `skillrouter quality`
 - [x] Area coverage & distinctiveness (PRD §4.4/§6.4): `src/registry/neighbors.ts` field-weighted overlay; router dilution of weaker near-duplicates (config `router.distinctiveness`); `skillrouter neighbors <id>`
-- [ ] Cookbook skills: multi-step planning combining router + runtime observations (PRD §14)
+- [x] Task decomposition + workflow planning (PRD §14 cookbook skills): `src/task/decompose.ts` deterministic stage recipes + explicit-sequence splitting; `src/workflow/planner.ts` routes every subtask and composes a validated dependency-safe DAG; `skillrouter decompose` / `skillrouter workflow`
+- [ ] Timeline view of routing history (PRD §10, `--timeline`)
 - [ ] Timeline view of routing history (PRD §10, `--timeline`)
 
 ## Future (documented, not built in V0.1)

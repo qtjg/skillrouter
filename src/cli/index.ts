@@ -18,6 +18,7 @@ import { duplicatesCommand } from "./commands/duplicates.ts";
 import { qualityCommand, neighborsCommand } from "./commands/quality.ts";
 import { planCommand } from "./commands/plan.ts";
 import { gapsCommand } from "./commands/gaps.ts";
+import { decomposeCommand, workflowCommand } from "./commands/workflow.ts";
 import { pathToFileURL } from "node:url";
 
 export function buildRegistry(): CommandRegistry {
@@ -39,6 +40,8 @@ export function buildRegistry(): CommandRegistry {
   registry.register(neighborsCommand);
   registry.register(planCommand);
   registry.register(gapsCommand);
+  registry.register(decomposeCommand);
+  registry.register(workflowCommand);
   // Capabilities
   registry.register(installCommand);
   registry.register(uninstallCommand);
