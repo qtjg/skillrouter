@@ -16,6 +16,7 @@ import { indexCommand } from "./commands/corpus.ts";
 import { retrieveCommand } from "./commands/retrieve.ts";
 import { duplicatesCommand } from "./commands/duplicates.ts";
 import { planCommand } from "./commands/plan.ts";
+import { gapsCommand } from "./commands/gaps.ts";
 import { pathToFileURL } from "node:url";
 
 export function buildRegistry(): CommandRegistry {
@@ -34,6 +35,7 @@ export function buildRegistry(): CommandRegistry {
   registry.register(retrieveCommand);
   registry.register(duplicatesCommand);
   registry.register(planCommand);
+  registry.register(gapsCommand);
   // Capabilities
   registry.register(installCommand);
   registry.register(uninstallCommand);
