@@ -12,6 +12,7 @@ import { learnCommand } from "./commands/learn.ts";
 import { reputationCommand } from "./commands/reputation.ts";
 import { contextCommand } from "./commands/context.ts";
 import { classifyCommand } from "./commands/classify.ts";
+import { indexCommand } from "./commands/corpus.ts";
 import { pathToFileURL } from "node:url";
 
 export function buildRegistry(): CommandRegistry {
@@ -25,6 +26,8 @@ export function buildRegistry(): CommandRegistry {
   registry.register(searchCommand);
   registry.register(infoCommand);
   registry.register(findCommand);
+  // Corpus
+  registry.register(indexCommand);
   // Capabilities
   registry.register(installCommand);
   registry.register(uninstallCommand);

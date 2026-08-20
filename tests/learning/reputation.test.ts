@@ -5,7 +5,7 @@ import type { MetricsRow } from "../../src/storage/types.ts";
 import type { OutcomeSummary } from "../../src/learning/outcomes.ts";
 import type { Capability, TrustLevel } from "../../src/core/types.ts";
 
-const NOW = "2026-08-19T12:00:00.000Z";
+const NOW = new Date().toISOString();
 
 function cap(overrides: Partial<Capability> = {}): Capability {
   return {

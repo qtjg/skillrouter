@@ -4,6 +4,7 @@ import type { Capability, CapabilityState, TrustLevel } from "../core/types.ts";
 import { ensureDir } from "../utils/fs.ts";
 import { SkillRouterError } from "../utils/errors.ts";
 import { installedAgentsJson, parseAgentsJson, type Storage, type InstalledCapabilityRow, type RoutingHistoryRow, type AuditRow, type PreferenceRow, type TrustRow, type RouterCacheRow, type MetricsRow, type SkillOutcomeRow } from "./types.ts";
+import type { CapabilityCorpusRecord } from "../corpus/types.ts";
 
 function toHistoryRow(raw: Record<string, unknown>): RoutingHistoryRow {
   return {
@@ -127,6 +128,16 @@ const MIGRATIONS: string[] = [
     context TEXT
   );
   CREATE INDEX idx_skill_outcomes_capability_ts ON skill_outcomes(capability_id, ts);
+  `,
+  // migration 4: capability corpus records (PRD v2.0 §7.2 / Phase D1)
+  `
+  CREATE TABLE corpus_records (
+    capability_id TEXT PRIMARY KEY,
+    record TEXT NOT NULL,
+    content_hash TEXT NOT NULL,
+    body_tokens INTEGER NOT NULL DEFAULT 0,
+    indexed_at TEXT NOT NULL
+  );
   `,
 ];
 
@@ -427,5 +438,32 @@ export class SqliteStorage implements Storage {
          )`,
       )
       .run(capabilityId, capabilityId, Math.max(0, keep));
+  }
+
+  async getCorpusRecord(capabilityId: string): Promise<CapabilityCorpusRecord | null> {
+    const row = this.connection.prepare("SELECT record FROM corpus_records WHERE capability_id = ?").get(capabilityId) as { record: string } | undefined;
+    if (!row) return null;
+    return JSON.parse(row.record) as CapabilityCorpusRecord;
+  }
+
+  async upsertCorpusRecord(record: CapabilityCorpusRecord): Promise<void> {
+    this.connection
+      .prepare(
+        `INSERT INTO corpus_records (capability_id, record, content_hash, body_tokens, indexed_at)
+         VALUES (?, ?, ?, ?, ?)
+         ON CONFLICT(capability_id) DO UPDATE SET
+           record = excluded.record, content_hash = excluded.content_hash,
+           body_tokens = excluded.body_tokens, indexed_at = excluded.indexed_at`,
+      )
+      .run(record.capabilityId, JSON.stringify(record), record.contentHash, record.bodyTokens, record.indexedAt);
+  }
+
+  async allCorpusRecords(): Promise<CapabilityCorpusRecord[]> {
+    const rows = this.connection.prepare("SELECT record FROM corpus_records").all() as unknown as Array<{ record: string }>;
+    return rows.map((r) => JSON.parse(r.record) as CapabilityCorpusRecord);
+  }
+
+  async removeCorpusRecord(capabilityId: string): Promise<void> {
+    this.connection.prepare("DELETE FROM corpus_records WHERE capability_id = ?").run(capabilityId);
   }
 }

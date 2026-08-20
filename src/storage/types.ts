@@ -1,4 +1,5 @@
 import type { Capability, CapabilityState, TrustLevel } from "../core/types.ts";
+import type { CapabilityCorpusRecord } from "../corpus/types.ts";
 
 export interface InstalledCapabilityRow {
   id: string;
@@ -120,6 +121,11 @@ export interface Storage {
   recentSkillOutcomes(perCapabilityLimit?: number): Promise<SkillOutcomeRow[]>;
   /** Drops the oldest outcomes of a capability, keeping the newest `keep`. */
   pruneSkillOutcomes(capabilityId: string, keep: number): Promise<void>;
+
+  getCorpusRecord(capabilityId: string): Promise<CapabilityCorpusRecord | null>;
+  upsertCorpusRecord(record: CapabilityCorpusRecord): Promise<void>;
+  allCorpusRecords(): Promise<CapabilityCorpusRecord[]>;
+  removeCorpusRecord(capabilityId: string): Promise<void>;
 }
 
 export function installedAgentsJson(agents: string[]): string {
