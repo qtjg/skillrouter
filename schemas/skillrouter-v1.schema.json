@@ -116,6 +116,11 @@
       "items": { "type": "string" },
       "description": "Ordered capability ids to try when this capability fails at runtime; guarantees loop prevention."
     },
+    "notFor": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Explicit statements of what this capability must NOT be selected for. Matches dominate generic keyword signals."
+    },
     "permissions": {
       "type": "object",
       "description": "Declared permission surface. Drives risk scoring and consent.",

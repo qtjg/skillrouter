@@ -324,6 +324,7 @@ function renderRoute(decision: import("../../router/types.ts").RouterDecision, t
 function renderExplanation(explanation: ReturnType<typeof explainDecision>): void {
   section("Why this decision");
   line(`  Task: ${bold(explanation.task)}`);
+  line(`  Match: ${explanation.classification} · confidence ${(explanation.confidence.value * 100).toFixed(0)}% ${explanation.confidence.label}`);
   line("");
   for (const item of explanation.analysis) line(`${" ".repeat(4)}${dim(item)}`);
   line("");
@@ -333,6 +334,14 @@ function renderExplanation(explanation: ReturnType<typeof explainDecision>): voi
     for (const signal of activation.signals) line(`${" ".repeat(6)}✓ ${signal}`);
     if (activation.permissions.length > 0) {
       line(`${" ".repeat(4)}${bold("Permissions:")} ${activation.permissions.join(", ")}`);
+    }
+    line("");
+  }
+  if (explanation.rejections.length > 0) {
+    line(`${" ".repeat(2)}${bold("Rejected")}:`);
+    for (const rejection of explanation.rejections) {
+      line(`${" ".repeat(4)}✗ ${dim(rejection.id)} — ${rejection.score}/100`);
+      for (const reason of rejection.reasons) line(`${" ".repeat(6)}${yellow(reason)}`);
     }
     line("");
   }

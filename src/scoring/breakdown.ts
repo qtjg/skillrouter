@@ -44,7 +44,7 @@ const GROUP_TYPES: Record<string, string[]> = {
   historical: ["historical"],
   strategy: ["cost", "latency", "contextCost"],
   exploration: ["exploration"],
-  riskPenalty: ["permissionCost"],
+  riskPenalty: ["permissionCost", "negativeSignal"],
 };
 
 function clamp01(value: number): number {

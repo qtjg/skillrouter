@@ -5,7 +5,10 @@ import { riskLevelBadge } from "../security/risk.ts";
 export interface ExplainOutput {
   task: string;
   analysis: string[];
+  classification: import("../classification/types.ts").MatchClass;
+  confidence: { value: number; label: string };
   activations: Array<{ id: string; score: number; confidence: string; signals: string[]; permissions: string[]; risk: string }>;
+  rejections: Array<{ id: string; score: number; reasons: string[] }>;
   deactivations: Array<{ id: string; score: number; signals: string[] }>;
   kept: Array<{ id: string; score: number }>;
   context: { estimate: number; budget: number; percent: number };
@@ -25,10 +28,25 @@ export function explainDecision(decision: RouterDecision): ExplainOutput {
     .map((p) => ({ id: p.capabilityId, score: p.score, signals: p.reasons.map((r) => r.text).slice(0, 4) }));
   const kept = decision.plan.filter((p) => p.action === "keep").map((p) => ({ id: p.capabilityId, score: p.score }));
 
+  // Rejected candidates with their dominant rejection reasons (PRD §12/§17).
+  const planned = new Set(decision.plan.map((p) => p.capabilityId));
+  const rejections = decision.scores
+    .filter((s) => !planned.has(s.capability.id))
+    .map((s) => ({
+      id: s.capability.id,
+      score: s.score,
+      reasons: rejectionReasons(s),
+    }))
+    .filter((r) => r.reasons.length > 0)
+    .slice(0, 5);
+
   return {
     task: decision.task,
     analysis,
+    classification: decision.classification,
+    confidence: decision.confidence,
     activations,
+    rejections,
     deactivations,
     kept,
     context: {
@@ -41,6 +59,18 @@ export function explainDecision(decision: RouterDecision): ExplainOutput {
     semanticUsed: decision.semanticUsed,
     llmUsed: decision.llmUsed,
   };
+}
+
+/** Picks the strongest explanation for a candidate being rejected (PRD §12). */
+export function rejectionReasons(score: CapabilityScore): string[] {
+  const reasons: string[] = [];
+  const negative = score.signals.filter((s) => s.type === "negativeSignal");
+  if (negative.length > 0) reasons.push(negative.map((s) => s.text.replace(/^explicit /, "")).join("; "));
+  if (score.breakdown.trust < 0) reasons.push("untrusted publisher");
+  if (score.breakdown.permissionCost < 0) reasons.push(`risk ${score.riskLevel} / high permissions`);
+  if (score.breakdown.compatibility < 0) reasons.push(`unsupported for the target agent (${score.compatibility})`);
+  if (score.score <= 0) reasons.push("no positive evidence");
+  return reasons.slice(0, 3);
 }
 
 function explainAction(action: PlanAction, decision: RouterDecision): ExplainOutput["activations"][number] {

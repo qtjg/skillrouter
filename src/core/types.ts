@@ -196,6 +196,8 @@ export interface Capability {
   compatibleWith?: string[];
   /** Ordered fallback capability ids to try when this capability fails (PRD §21). */
   fallbacks?: string[];
+  /** Explicit statements of what this capability must NOT be used for (PRD §17). */
+  notFor?: string[];
   /** Declared environment requirements used by context matching and constraints (PRD2 §8). */
   requirements?: CapabilityRequirements;
   permissions?: PermissionSet;

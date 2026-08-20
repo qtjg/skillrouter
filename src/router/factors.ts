@@ -40,6 +40,8 @@ export const W = {
   contextRuntime: 6,
   contextMismatchRuntime: -20,
   intentMatch: 16,
+  // PRD §17: explicit negative capability match — strictly stronger than keywords
+  negativeSignal: -18,
 };
 
 export type Weights = Record<keyof typeof W, number>;
@@ -137,6 +139,7 @@ export function scoreSingleCapability(
     contextCost: 0,
     permissionCost: 0,
     conflict: 0,
+    negativeSignal: 0,
   };
 
   const add = (factor: keyof FactorBreakdown, weight: number, text: string) => {
@@ -164,6 +167,19 @@ export function scoreSingleCapability(
   }
   if (matchedDescription.length > 0) {
     add("taskSimilarity", Math.min(8, matchedDescription.length * w.description), `${matchedDescription.length} term(s) matched the capability description`);
+  }
+
+  // --- Explicit negative capability match (PRD §17): dominates generic keyword signals ---
+  const negativeHits: Array<{ entry: string; matched: string[] }> = [];
+  if (capability.notFor && capability.notFor.length > 0) {
+    for (const entry of capability.notFor) {
+      const entryTokens = tokenizeNegatives(entry);
+      const matched = [...entryTokens].filter((t) => taskTokens.has(t));
+      if (matched.length > 0) negativeHits.push({ entry, matched });
+    }
+  }
+  for (const hit of negativeHits.slice(0, 2)) {
+    add("negativeSignal", w.negativeSignal, `explicit negative capability match for "${hit.entry}"`);
   }
 
   const idTokens = new Set<string>([...normalizePhrases(capability.id)]);
@@ -337,6 +353,15 @@ export function scoreSingleCapability(
     riskLevel: risk.level,
     conflictWith: null,
   };
+}
+
+function tokenizeNegatives(entry: string): Set<string> {
+  return new Set(
+    entry
+      .toLowerCase()
+      .split(/[^a-z0-9+#._-]+/)
+      .filter((t) => t.length > 1),
+  );
 }
 
 function depRelates(dep: string, capability: Capability): boolean {

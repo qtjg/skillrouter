@@ -43,6 +43,8 @@ export interface FactorBreakdown {
   contextCost: number;
   permissionCost: number;
   conflict: number;
+  /** Explicit negative capability matches (PRD §17); dominate generic keyword signals. */
+  negativeSignal: number;
 }
 
 export interface CapabilityScore {
