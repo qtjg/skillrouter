@@ -8,7 +8,7 @@ import type { Weights } from "../router/factors.ts";
  *
  * Group membership maps signals to PRD dimensions:
  * - capability: keyword / technology / taskSimilarity / project / git / file /
- *   dependency / compatibility / trust / quality / preference
+ *   dependency / compatibility / trust / quality / preference / neighbor
  * - context: context (language/framework/runtime match)
  * - intent: taskSimilarity signals tagged with the intent category
  * - historical: historical
@@ -38,7 +38,7 @@ const GROUP_CAPS: Record<string, number> = {
 };
 
 const GROUP_TYPES: Record<string, string[]> = {
-  capability: ["keyword", "technology", "taskSimilarity", "project", "git", "file", "dependency", "compatibility", "trust", "quality", "preference"],
+  capability: ["keyword", "technology", "taskSimilarity", "project", "git", "file", "dependency", "compatibility", "trust", "quality", "preference", "neighbor"],
   context: ["context"],
   intent: ["intent"],
   historical: ["historical"],

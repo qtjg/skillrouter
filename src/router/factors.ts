@@ -6,6 +6,7 @@ import { matchesGlob } from "../utils/glob.ts";
 import { softPreferenceDelta } from "../constraints/constraints.ts";
 import type { ProjectAnalysis } from "../project/analyzer.ts";
 import type { RouterStrategy } from "../config/config.ts";
+import { analyzeCapabilityQuality } from "../quality/analyzer.ts";
 
 export const W = {
   keyword: 12,
@@ -235,6 +236,12 @@ export function scoreSingleCapability(
   // --- Quality & history ---
   const quality = capability.metadata?.quality;
   if (quality !== undefined) add("quality", (quality / 100) * w.qualityFactor, `declared quality ${quality}/100`);
+  else {
+    const report = analyzeCapabilityQuality(capability, { history: ctx.outcomes?.get(capability.id) });
+    const weight = (report.quality / 100) * w.qualityFactor;
+    if (report.source === "derived") add("quality", weight, `manifest quality ${report.quality}/100`);
+    else add("quality", weight, `quality ${report.quality}/100 (${report.source}: ${report.dimensions.history ?? 0}/100 history)`);
+  }
 
   // --- Intent match (Phase E/F): declared capability categories vs classified intent ---
   const intent = ctx.intent;

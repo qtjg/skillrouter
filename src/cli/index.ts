@@ -15,6 +15,7 @@ import { classifyCommand } from "./commands/classify.ts";
 import { indexCommand } from "./commands/corpus.ts";
 import { retrieveCommand } from "./commands/retrieve.ts";
 import { duplicatesCommand } from "./commands/duplicates.ts";
+import { qualityCommand, neighborsCommand } from "./commands/quality.ts";
 import { planCommand } from "./commands/plan.ts";
 import { gapsCommand } from "./commands/gaps.ts";
 import { pathToFileURL } from "node:url";
@@ -34,6 +35,8 @@ export function buildRegistry(): CommandRegistry {
   registry.register(indexCommand);
   registry.register(retrieveCommand);
   registry.register(duplicatesCommand);
+  registry.register(qualityCommand);
+  registry.register(neighborsCommand);
   registry.register(planCommand);
   registry.register(gapsCommand);
   // Capabilities

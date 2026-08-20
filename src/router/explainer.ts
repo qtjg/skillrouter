@@ -29,9 +29,9 @@ export function explainDecision(decision: RouterDecision): ExplainOutput {
   const kept = decision.plan.filter((p) => p.action === "keep").map((p) => ({ id: p.capabilityId, score: p.score }));
 
   // Rejected candidates with their dominant rejection reasons (PRD §12/§17).
-  const planned = new Set(decision.plan.map((p) => p.capabilityId));
+  const notSelected = new Set(decision.plan.filter((p) => p.action === "keep-inactive" || p.action === "deactivate").map((p) => p.capabilityId));
   const rejections = decision.scores
-    .filter((s) => !planned.has(s.capability.id))
+    .filter((s) => notSelected.has(s.capability.id))
     .map((s) => ({
       id: s.capability.id,
       score: s.score,
@@ -66,6 +66,8 @@ export function rejectionReasons(score: CapabilityScore): string[] {
   const reasons: string[] = [];
   const negative = score.signals.filter((s) => s.type === "negativeSignal");
   if (negative.length > 0) reasons.push(negative.map((s) => s.text.replace(/^explicit /, "")).join("; "));
+  const neighbor = score.signals.find((s) => s.type === "neighbor");
+  if (neighbor) reasons.push(neighbor.text);
   if (score.breakdown.trust < 0) reasons.push("untrusted publisher");
   if (score.breakdown.permissionCost < 0) reasons.push(`risk ${score.riskLevel} / high permissions`);
   if (score.breakdown.compatibility < 0) reasons.push(`unsupported for the target agent (${score.compatibility})`);

@@ -24,6 +24,8 @@ export interface RouterConfig {
   model: string | null;
   maxActivations: number;
   strategy: RouterStrategy;
+  /** Dilute near-duplicate capabilities that lose to a stronger neighbor (PRD §4.4). */
+  distinctiveness: boolean;
   /** NO_MATCH/WEAK_MATCH/GOOD_MATCH/EXACT_MATCH boundaries (PRD §12). */
   classificationThresholds: {
     noMatch: number;
@@ -129,6 +131,7 @@ export const DEFAULT_CONFIG: SkillRouterConfig = {
     model: null,
     maxActivations: 5,
     strategy: "balanced",
+    distinctiveness: true,
     classificationThresholds: {
       noMatch: 25,
       weak: 50,

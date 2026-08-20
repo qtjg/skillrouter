@@ -11,6 +11,7 @@ import { buildPlan, createDecision, defaultPlannerOptions, type PlannerOptions }
 import { defaultSemanticMatcher, defaultLlmReranker } from "./semantic.ts";
 import { RouterError } from "../utils/errors.ts";
 import { globalBus } from "../core/events.ts";
+import { analyzePool, type NeighborAnalysis } from "../registry/neighbors.ts";
 
 export { expandDependencies, sortByDependencies, requiredDependencies } from "./dependency-resolver.ts";
 export type { DependencyResolution, MissingDependency, OptionalMiss } from "./dependency-resolver.ts";
@@ -29,6 +30,17 @@ function preparedFor(capability: Capability) {
     PREPARED.set(capability, prepared);
   }
   return prepared;
+}
+
+const DILUTION = new WeakMap<Capability[], Map<string, NeighborAnalysis>>();
+
+function dilutionCache(capabilities: Capability[]): Map<string, NeighborAnalysis> {
+  let cached = DILUTION.get(capabilities);
+  if (!cached) {
+    cached = analyzePool(capabilities);
+    DILUTION.set(capabilities, cached);
+  }
+  return cached;
 }
 
 /**
@@ -63,6 +75,13 @@ export class Router {
 
     const options = this.optionsFrom(ctx);
     let scores = this.rank(ctx, analysis);
+
+    // PRD §4.4: near-duplicate capabilities compete for the same tasks. The
+    // weaker of a similar pair pays a dilution penalty so the stronger,
+    // better-evidenced pick stays ahead. Disabled below two candidates.
+    if (ctx.config.router.distinctiveness && scores.length > 1) {
+      this.dilute(ctx, scores);
+    }
 
     const semanticUsed = this.semantic.isConfigured(ctx.config) && ctx.config.router.semantic;
     if (semanticUsed) {
@@ -119,6 +138,32 @@ export class Router {
   private semanticCheck(ctx: RouteContext): void {
     if (typeof ctx.config.router.threshold !== "number") {
       throw new RouterError("router.threshold must be a number between 0 and 100");
+    }
+  }
+
+  /**
+   * Dilution pass (PRD §4.4). For each candidate that has a neighbor with a
+   * strictly higher score, scale the candidate down by up to 35% proportional
+   * to the overlay — the attention a duplicated area can pay out is shared.
+   * Neighbor similarity comes from the registry overlay (deterministic).
+   */
+  private dilute(ctx: RouteContext, scores: CapabilityScore[]): void {
+    const cache = dilutionCache(ctx.capabilities);
+    for (const score of scores) {
+      if (score.score <= 0) continue;
+      const analysis = cache.get(score.capability.id);
+      if (!analysis?.best) continue;
+      const winner = scores.find((s) => s.capability.id === analysis.best!.id);
+      if (!winner || winner.score <= score.score) continue;
+      const dilution = Math.round(score.score * (1 - 0.35 * analysis.best.similarity));
+      if (dilution < score.score) {
+        score.signals.push({
+          type: "neighbor",
+          text: `area shared with ${analysis.best.id} (${Math.round(analysis.best.similarity * 100)}% overlay, ${winner.score} vs ${score.score}); attention diluted`,
+          weight: -Math.round(score.score - dilution),
+        });
+        score.score = dilution;
+      }
     }
   }
 

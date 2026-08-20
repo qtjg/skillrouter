@@ -135,6 +135,11 @@ Tests: `tests/gaps/gaps.test.ts` (5).
 | Counterfactual analysis ("what if another capability won") | PARTIAL | routing history + audit trail | counterfactual evaluation module |
 | Self-improvement loop | PARTIAL | Phase G feedback loop | corpus-level feedback (index → retrieve → learn) |
 
+| Requirement (PRD v2.0) | Status | Existing | Planned change |
+| --- | --- | --- | --- |
+| Quality analyzer (PRD §8) | IMPLEMENTED | `src/quality/analyzer.ts`: declared quality authoritative, else completeness + reliability + outcome history (mixed source), verdict labels; `skillrouter quality [id] [--min-quality] [--json]` ranks the registry | — |
+| Area coverage / neighbor distinctiveness (PRD §4.4/§6.4) | IMPLEMENTED | `src/registry/neighbors.ts` field-weighted overlay (id containment, name, triggers, technologies, intents, description -> `similarityBetween`, `findNeighbors`, `analyzePool`, `distinctivenessOf`); router dilution pass (up to 35% of the weaker clone, `router.distinctiveness`, default on); `skillrouter neighbors <id> [--min-similarity] [--json]` | — |
+
 ## Phase E — Registry Federation
 
 | Requirement (PRD v2.0) | Status | Existing | Planned change |

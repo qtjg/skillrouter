@@ -127,6 +127,8 @@ Legend: `[x]` done, `[~]` partial, `[ ]` pending.
 - [x] Routing strategies (balanced/quality/speed/cheap/minimal/safe) + cost/latency metadata (route `--strategy`, `router.strategy` config, weight presets in `src/router/factors.ts`)
 - [x] Phase D: pluggable context engine (`src/context/`) — providers git/project/runtime/filesystem/package-manager/environment, normalized dotted fields, secret redaction, per-provider timeouts, `skillrouter context`
 - [x] Phase E: intent classifier (`src/intent/`, 10 intents, deterministic confidence) + constraints (`src/constraints/`, hard rejection + permission boundary + soft deltas) + `skillrouter classify`
+- [x] Quality analyzer (PRD §8): `src/quality/analyzer.ts` — declared quality authoritative, else derived from completeness/reliability/outcome history; feeds the router `quality` factor; `skillrouter quality`
+- [x] Area coverage & distinctiveness (PRD §4.4/§6.4): `src/registry/neighbors.ts` field-weighted overlay; router dilution of weaker near-duplicates (config `router.distinctiveness`); `skillrouter neighbors <id>`
 - [ ] Cookbook skills: multi-step planning combining router + runtime observations (PRD §14)
 - [ ] Timeline view of routing history (PRD §10, `--timeline`)
 

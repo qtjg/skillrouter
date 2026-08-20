@@ -47,7 +47,7 @@ function ctx(capabilities: Capability[]): RouteContext {
     agents: ["opencode"],
     config: {
       project: { name: null },
-      router: { mode: "assisted", always: [], never: [], prefer: [], avoid: [], threshold: 40, semantic: false, model: null, maxActivations: 5, strategy: "balanced", classificationThresholds: { noMatch: 25, weak: 50, good: 75, exact: 90 }, context: { enabled: true, timeoutMs: 1000 } },
+      router: { mode: "assisted", always: [], never: [], prefer: [], avoid: [], threshold: 40, semantic: false, model: null, maxActivations: 5, strategy: "balanced", distinctiveness: true, classificationThresholds: { noMatch: 25, weak: 50, good: 75, exact: 90 }, context: { enabled: true, timeoutMs: 1000 } },
       capabilities: { autoInstall: false, autoActivate: true },
       security: { requireConsent: true, blocked: [], policy: {} },
       learning: { enabled: true, reputationWeight: 8, latencyWeight: 5, maxOutcomes: 1000 },
