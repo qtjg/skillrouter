@@ -10,6 +10,7 @@
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22.5-111827?style=flat-square&logo=node.js)](package.json)
 [![License](https://img.shields.io/github/license/qtjg/skillrouter?style=flat-square)](LICENSE)
 [![Tests](https://img.shields.io/badge/tests-151%20passing-10b981?style=flat-square)](package.json)
+[![CI](https://github.com/qtjg/skillrouter/actions/workflows/ci.yml/badge.svg)](https://github.com/qtjg/skillrouter/actions/workflows/ci.yml)
 
 <br />
 
@@ -361,6 +362,8 @@ The documented future direction includes a runtime daemon, embedding-based seman
 ## Development and testing
 
 Clone the repository, install dependencies, and keep strict TypeScript checks clean before opening a pull request. The project follows Conventional Commits and intentionally keeps runtime dependencies minimal.[^contributing]
+
+Every push and pull request targeting `main` is verified by [`.github/workflows/ci.yml`](.github/workflows/ci.yml), which installs dependencies with `npm ci`, runs the TypeScript typecheck and test suite, and builds the project on Node.js 22.
 
 ```bash
 npm install
