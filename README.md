@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/3d-banner.svg" alt="skillrouter 3D banner" width="880" />
+</p>
+
 <div align="center">
 
 # SkillRouter
@@ -405,6 +409,22 @@ The README redesign was validated against the repository at commit `cf5db4c`: th
 Please read [`CONTRIBUTING.md`](CONTRIBUTING.md) before making changes. In brief: fork or clone the repository, create a focused branch, preserve strict TypeScript boundaries, add or update tests, run typecheck and the relevant verification commands, document architectural decisions in [`DECISIONS.md`](DECISIONS.md), and open a pull request with a clear explanation of the change.
 
 Security reports should follow [`SECURITY.md`](SECURITY.md) rather than being opened as public issues.
+
+
+---
+
+## 🧊 3D Visuals
+
+<p align="center">
+  <img src="docs/assets/3d-langs.svg" alt="skillrouter — 3D language stack" width="800" />
+</p>
+
+Isometric 3D language stack computed from live GitHub language stats.
+Regenerate the graphics any time with the built-in generator — stdlib only, zero dependencies:
+
+```bash
+python tools/generate_3d_assets.py
+```
 
 ## License
 
