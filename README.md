@@ -2,6 +2,24 @@
 
 # SkillRouter
 
+<!-- ⬡ 3D-UPGRADE v1 by Mayank Bhaskar -->
+<div align="center">
+
+![skillrouter — 3D](assets/3d-hero.svg)
+
+**made by [Mayank Bhaskar](https://github.com/qtjg)** · ![lang](https://img.shields.io/badge/lang-TypeScript-a78bfa?style=flat&labelColor=0d1117) ![stars](https://img.shields.io/github/stars/qtjg/skillrouter?style=flat&labelColor=0d1117&color=a78bfa)
+
+### 🧊 3D View
+
+![skillrouter — isometric stack](assets/3d-stack.svg)
+
+*Floating isometric render — layers hover, data particles stream, shine sweeps.*
+
+</div>
+
+---
+🩺 **New tool — `repo-pulse`**: instant git pulse (28-day heat bars, hot files, contributors). Run: `node tools/repo-pulse.mjs`
+
 ### Adaptive capability routing for AI agents.
 
 **Give every task the right capability at the right time — with context, intent, reliability, cost, latency, trust, and controlled recovery in the loop.**
