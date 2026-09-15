@@ -23,7 +23,7 @@
 [![Version](https://img.shields.io/badge/version-0.1.0-111827?style=flat-square)](package.json)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22.5-111827?style=flat-square&logo=node.js)](package.json)
 [![License](https://img.shields.io/github/license/qtjg/skillrouter?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-151%20passing-10b981?style=flat-square)](package.json)
+[![Tests](https://img.shields.io/badge/tests-313%20passing-10b981?style=flat-square)](package.json)
 [![CI](https://github.com/qtjg/skillrouter/actions/workflows/ci.yml/badge.svg)](https://github.com/qtjg/skillrouter/actions/workflows/ci.yml)
 
 <br />
