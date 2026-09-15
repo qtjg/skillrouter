@@ -121,14 +121,25 @@ export async function promptYesNo(question: string, defaultValue: boolean): Prom
       if (!buffer.includes("\n") && !buffer.includes("\r")) return;
       process.stdin.removeListener("data", onData);
       const answer = buffer.trim().toLowerCase();
-      if (answer === "") return resolve2(defaultValue);
-      if (["y", "yes"].includes(answer)) return resolve2(true);
-      if (["n", "no"].includes(answer)) return resolve2(false);
+      if (answer === "") return finish(defaultValue);
+      if (["y", "yes"].includes(answer)) return finish(true);
+      if (["n", "no"].includes(answer)) return finish(false);
       process.stdout.write(`${yellow("Please answer y or n.")} ${suffix} `);
       buffer = "";
       process.stdin.on("data", onData);
     };
+    const finish = (value: boolean) => {
+      process.stdin.removeListener("data", onData);
+      process.stdin.removeListener("end", onEnded);
+      process.stdin.removeListener("error", onEnded);
+      resolve2(value);
+    };
+    // Non-TTY stdin (CI, agents, `</dev/null`) never emits data; without an
+    // end/error listener the promise never settles and commands hang forever.
+    const onEnded = () => finish(defaultValue);
     process.stdin.on("data", onData);
+    process.stdin.on("end", onEnded);
+    process.stdin.once("error", onEnded);
   });
 }
 

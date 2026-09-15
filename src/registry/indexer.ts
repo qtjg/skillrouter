@@ -1,4 +1,6 @@
-import { join, isAbsolute, basename } from "node:path";
+import { join, isAbsolute, basename, dirname } from "node:path";
+import { stat, mkdtemp, copyFile, cp } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import type { Capability } from "../core/types.ts";
 import type { Storage } from "../storage/types.ts";
 import type { SkillRouterConfig } from "../config/config.ts";
@@ -152,6 +154,28 @@ export async function resolveCapabilityRef(ref: string, cwd: string, sources: Sk
   const isPath = ref.includes("/") || ref.startsWith(".") || ref.startsWith("~") || (isAbsolute(ref) && !ref.includes(":"));
   if (isPath && !isGitUrl(ref)) {
     if (!(await pathExists(ref))) return null;
+    const st = await stat(ref);
+    if (st.isFile()) {
+      // A direct manifest file path (e.g. `install ./examples/manifests/stripe.yaml`).
+      // Discovery normally matches fixed filenames inside directories, so load the
+      // file itself instead of requiring it to be named skillrouter.yaml/manifest.yaml.
+      const content = await readTextSafe(ref);
+      if (content === null) return null;
+      const capability = loadManifestFromContent(content, ref, { strict: false });
+      const fsHash = await sha256File(ref);
+      capability.source = { type: "local", location: dirname(ref), hash: fsHash };
+      // Stage the manifest under the canonical name (plus any sibling body
+      // files/dirs) so installer verification, which expects skillrouter.yaml
+      // or manifest.yaml at the source root, passes for loose-file manifests.
+      const staged = await mkdtemp(join(tmpdir(), "skillrouter-stage-"));
+      await copyFile(ref, join(staged, "skillrouter.yaml"));
+      const sourceRoot = dirname(ref);
+      for (const name of ["SKILL.md", "README.md", "instructions", "docs", "examples", "scripts", "references"]) {
+        const sibling = join(sourceRoot, name);
+        if (await pathExists(sibling)) await cp(sibling, join(staged, name), { recursive: true });
+      }
+      return { capability, sourceDir: staged };
+    }
     const dir = ref;
     const found = await discoverSingleDir(dir);
     if (!found) {
