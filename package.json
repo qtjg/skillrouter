@@ -1,6 +1,6 @@
 {
   "name": "skillrouter",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The capability router for AI agents. Give your AI the right capabilities at the right time.",
   "license": "MIT",
   "type": "module",
@@ -23,7 +23,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json",
-    "test": "node --experimental-strip-types --test \"tests/unit/*.test.ts\" \"tests/router/*.test.ts\"",
+    "test": "node --experimental-strip-types --test \"tests/unit/*.test.ts\" \"tests/router/*.test.ts\" \"tests/adapters/*.test.ts\"",
     "test:unit": "node --experimental-strip-types --test \"tests/unit/*.test.ts\"",
     "test:router": "node --experimental-strip-types --test \"tests/router/*.test.ts\"",
     "test:cli": "node --experimental-transform-types --test \"tests/cli/*.test.ts\"",

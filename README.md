@@ -20,10 +20,10 @@
 
 **Give every task the right capability at the right time — with context, intent, reliability, cost, latency, trust, and controlled recovery in the loop.**
 
-[![Version](https://img.shields.io/badge/version-0.1.0-111827?style=flat-square)](package.json)
+[![Version](https://img.shields.io/badge/version-0.2.0-111827?style=flat-square)](package.json)
 [![Node.js](https://img.shields.io/badge/node-%3E%3D22.5-111827?style=flat-square&logo=node.js)](package.json)
 [![License](https://img.shields.io/github/license/qtjg/skillrouter?style=flat-square)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-327%20passing-10b981?style=flat-square)](package.json)
+[![Tests](https://img.shields.io/badge/tests-328%20passing-10b981?style=flat-square)](package.json)
 [![CI](https://github.com/qtjg/skillrouter/actions/workflows/ci.yml/badge.svg)](https://github.com/qtjg/skillrouter/actions/workflows/ci.yml)
 
 <br />
@@ -104,8 +104,50 @@ The repository is in **early development**, but the current implementation is su
 | Strategies | `balanced`, `quality`, `speed`, `cheap`, `minimal`, and `safe`, with declared cost and latency metadata available to the scorer. |
 | Reliability and recovery | Bounded `skill_metrics`, historical scoring, `stats`, `learn`, declared fallback chains, attempted-set loop prevention, maximum step limits, fallback events, and learned suggestions. |
 | Security | Risk levels, permission declarations, untrusted-by-default policy, secret detection, trust levels, audit logging, key/signature tooling, and consent gating. |
-| Adapters | OpenCode, Claude-compatible skills, generic Agent Skills, Gemini CLI, MCP configuration, and agent environment detection through `doctor`. |
+| Adapters | OpenCode, Claude, Codex CLI, Gemini CLI, Cline, Cursor, GitHub Copilot, Windsurf, Aider, MCP configuration, generic Agent Skills, config-driven custom CLI agents, and environment detection through `doctor`. |
 | Reporting | Human-readable CLI output, JSON mode, `explain`, `verify`, `self-test`, structured logs, audit history, and static HTML dashboard export. |
+
+## Universal agent connectivity (v0.2)
+
+SkillRouter connects to every major coding agent — natively through adapters, or through config for anything else. Capability payloads are exposed as managed, marked markdown files (or MCP registrations) that each agent picks up on its own terms.
+
+| Agent | Type | SkillRouter exposes capabilities via |
+| --- | --- | --- |
+| OpenCode | built-in | `.opencode/skills/` (native skill format) |
+| Claude Code | built-in | `.claude/skills/` (native skill format) |
+| Gemini CLI | built-in | `~/.gemini/extensions/` (extension + skills) |
+| OpenAI Codex CLI | built-in | `.codex/prompts/` + `~/.codex/prompts/` |
+| Cline | built-in | `.clinerules/` + `~/.cline/rules/` |
+| Cursor | built-in | `.cursor/rules/*.mdc` (MDC frontmatter) |
+| GitHub Copilot | built-in | `.github/instructions/*.instructions.md` (`applyTo`) |
+| Windsurf | built-in | `.windsurf/rules/` + global Codeium rules |
+| Aider | built-in | `.aider/skills/` (with `--read` hint) |
+| MCP clients | built-in | `serve-mcp` tools (`route_task`, `search_capabilities`, `router_stats`) |
+| Anything else | config | `skillrouter agents add <name> --cmd <binary> --rules <dir>` |
+
+### Connect any CLI agent without writing code
+
+```bash
+skillrouter agents add myagent --cmd mycli --rules .myagent/rules --label "My Agent"
+skillrouter agents          # list every connected agent + detection evidence
+skillrouter agents remove myagent
+```
+
+Custom agents are stored in `skillrouter.yaml` under `customAgents`. Exposed capability files carry a `<!-- skillrouter:managed capability="…" -->` marker, so `uninstall`, `disable`, and discovery stay clean.
+
+### Expose the router itself over MCP
+
+Any MCP-capable client (Claude Desktop, Cline, Cursor, Codex, …) can ask SkillRouter which capability fits a task, mid-session:
+
+```bash
+claude mcp add skillrouter -- skillrouter serve-mcp
+```
+
+```json
+{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"route_task","arguments":{"task":"audit authentication changes","strategy":"safe"}}}
+```
+
+The server speaks newline-delimited JSON-RPC 2.0 on stdio with zero extra dependencies.
 
 ## Six routing strategies
 
@@ -268,6 +310,7 @@ SkillRouter is shipped as a single CLI. Use `skillrouter --help` for the complet
 | Group | Commands |
 | --- | --- |
 | Setup | `init`, `doctor`, `status`, `config` |
+| Connect | `agents`, `serve-mcp` |
 | Catalog | `search`, `find`, `info`, `install`, `uninstall`, `update`, `source` |
 | Lifecycle | `enable`, `disable`, `force-enable`, `force-disable`, `activate`, `deactivate`, `active` |
 | Routing | `route`, `explain`, `context`, `classify` |

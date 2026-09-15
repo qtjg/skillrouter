@@ -51,7 +51,7 @@ function ctx(capabilities: Capability[]): RouteContext {
       capabilities: { autoInstall: false, autoActivate: true },
       security: { requireConsent: true, blocked: [], policy: {} },
       learning: { enabled: true, reputationWeight: 8, latencyWeight: 5, maxOutcomes: 1000 },
-      agents: { opencode: true, gemini: true, claude: true, codex: false, mcp: false, generic: true },
+      agents: { opencode: true, gemini: true, claude: true, codex: false, mcp: false, generic: true, aider: true, cline: true, cursor: true, copilot: true, windsurf: true },
       retrieval: { topK: 10, embeddings: { enabled: false, provider: "local", model: "m", dimension: 256, apiKeyEnv: "K", baseUrl: "https://api.example.com/v1" }, rerank: { enabled: true, provider: "lexical" } },
       sources: [],
     },

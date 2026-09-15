@@ -80,7 +80,7 @@ test("collect surfaces active agents from config and honors offline flag", async
   await withStorage(async (storage) => {
     const config: SkillRouterConfig = {
       ...DEFAULT_CONFIG,
-      agents: { ...DEFAULT_CONFIG.agents, opencode: true, gemini: false, claude: false, generic: false },
+      agents: { ...DEFAULT_CONFIG.agents, opencode: true, gemini: false, claude: false, generic: false, codex: false, aider: false, cline: false, cursor: false, copilot: false, windsurf: false },
     };
     const engine = new ContextEngine(storage, config);
     const snapshot = await engine.collect({ cwd: process.cwd(), offline: true, historyLimit: 5 });

@@ -59,10 +59,12 @@ test("adapter registry throws AdapterError for an unknown agent id", () => {
   assert.throws(() => registry.get("codex" as AgentId), AdapterError);
 });
 
-test("getAdapterRegistry resolves the five built-in adapters and resets cleanly", async () => {
+test("getAdapterRegistry resolves all built-in adapters and resets cleanly", async () => {
   resetAdapterRegistry();
   const registry = await getAdapterRegistry(await tmpCtx());
-  assert.deepEqual(registry.ids().sort(), ["claude", "gemini", "generic", "mcp", "opencode"]);
+  assert.deepEqual(registry.ids().sort(), [
+    "aider", "claude", "cline", "codex", "copilot", "cursor", "gemini", "generic", "mcp", "opencode", "windsurf",
+  ]);
   resetAdapterRegistry();
 });
 

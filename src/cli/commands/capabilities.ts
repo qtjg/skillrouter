@@ -359,7 +359,7 @@ export const sourceCommand: CommandDef = {
 };
 
 async function exposeToAgents(app: AppContext, capability: import("../../core/types.ts").Capability, ctx: CliContext): Promise<void> {
-  const adapters = await getAdapterRegistry({ cwd: app.cwd, binaryPaths: new Map() });
+  const adapters = await getAdapterRegistry({ cwd: app.cwd, binaryPaths: new Map() }, app.config.customAgents ?? []);
   const installRow = await app.storage.getInstalled(capability.id);
   if (!installRow?.installRoot) return;
   const exposed: string[] = [];
@@ -383,7 +383,7 @@ async function exposeToAgents(app: AppContext, capability: import("../../core/ty
 }
 
 async function exposeRemoval(app: AppContext, id: string, installRoot: string | null): Promise<void> {
-  const adapters = await getAdapterRegistry({ cwd: app.cwd, binaryPaths: new Map() });
+  const adapters = await getAdapterRegistry({ cwd: app.cwd, binaryPaths: new Map() }, app.config.customAgents ?? []);
   for (const adapter of adapters.all()) {
     try {
       await adapter.uninstall(id, installRoot);
@@ -399,6 +399,7 @@ export function enabledAgents(app: AppContext): import("../../core/types.ts").Ag
   for (const [key, value] of Object.entries(agents) as Array<[string, boolean]>) {
     if (value) out.push(key as import("../../core/types.ts").AgentId);
   }
+  if ((app.config.customAgents ?? []).length > 0) out.push("custom");
   return out;
 }
 

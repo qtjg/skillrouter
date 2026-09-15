@@ -71,6 +71,12 @@ export interface AgentsConfig {
   codex: boolean;
   mcp: boolean;
   generic: boolean;
+  /** Rule-file agents (v0.2) — capability payloads are exposed as managed markdown. */
+  aider: boolean;
+  cline: boolean;
+  cursor: boolean;
+  copilot: boolean;
+  windsurf: boolean;
 }
 
 export type EmbeddingProviderName = "local" | "openai";
@@ -99,6 +105,22 @@ export interface RetrievalConfig {
   };
 }
 
+/**
+ * Config-driven custom CLI agent (universal connector). Declared under
+ * `customAgents` in skillrouter.yaml; payloads are exposed as managed
+ * markdown files into `rulesDir` so any CLI tool can pick them up.
+ */
+export interface CustomAgentConfig {
+  /** Unique slug used in CLI output and lookups. */
+  name: string;
+  /** Binary detected on PATH (evidence + doctor reporting). */
+  command: string;
+  /** Project-relative directory where capability payloads are exposed. */
+  rulesDir: string;
+  /** Optional display label. */
+  label?: string;
+}
+
 export interface SourcesConfigItem {
   name: string;
   type: "git" | "catalog" | "directory";
@@ -109,6 +131,8 @@ export interface SourcesConfigItem {
 
 export interface SkillRouterConfig {
   project: { name?: string | null };
+  /** Universal connector: any CLI agent can be attached via config. */
+  customAgents?: CustomAgentConfig[];
   router: RouterConfig;
   capabilities: CapabilitiesConfig;
   security: SecurityConfig;
@@ -120,6 +144,7 @@ export interface SkillRouterConfig {
 
 export const DEFAULT_CONFIG: SkillRouterConfig = {
   project: { name: null },
+  customAgents: [],
   router: {
     mode: "assisted",
     always: [],
@@ -165,6 +190,11 @@ export const DEFAULT_CONFIG: SkillRouterConfig = {
     codex: false,
     mcp: false,
     generic: true,
+    aider: true,
+    cline: true,
+    cursor: true,
+    copilot: true,
+    windsurf: true,
   },
   retrieval: {
     topK: 10,
@@ -326,6 +356,23 @@ function validateConfig(config: SkillRouterConfig, path: string): SkillRouterCon
     }
     if (item.type === "git" && !item.url) throw new ConfigError(`Git source "${item.name}" in ${path} requires a url`);
     if (item.type === "directory" && !item.path) throw new ConfigError(`Directory source "${item.name}" in ${path} requires a path`);
+  }
+  const customAgents = config.customAgents ?? [];
+  const seen = new Set<string>();
+  for (const agent of customAgents) {
+    if (!agent || typeof agent.name !== "string" || !/^[a-z0-9][a-z0-9_-]*$/i.test(agent.name)) {
+      throw new ConfigError(`customAgents entry in ${path} needs a name (alphanumeric, dashes/underscores)`);
+    }
+    if (seen.has(agent.name.toLowerCase())) {
+      throw new ConfigError(`customAgents has duplicate name "${agent.name}" in ${path}`);
+    }
+    seen.add(agent.name.toLowerCase());
+    if (typeof agent.command !== "string" || !agent.command.trim()) {
+      throw new ConfigError(`customAgents["${agent.name}"].command in ${path} must be a non-empty string`);
+    }
+    if (typeof agent.rulesDir !== "string" || !agent.rulesDir.trim() || agent.rulesDir.startsWith("/") || agent.rulesDir.includes("..")) {
+      throw new ConfigError(`customAgents["${agent.name}"].rulesDir in ${path} must be a project-relative directory path`);
+    }
   }
   return config;
 }

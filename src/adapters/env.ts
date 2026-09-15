@@ -10,11 +10,11 @@ export interface DetectionContext {
   binaryPaths: Map<string, string | null>;
 }
 
-export async function detectAll(cwd: string): Promise<AgentInfo[]> {
+export async function detectAll(cwd: string, customAgents: import("../config/config.ts").CustomAgentConfig[] = []): Promise<AgentInfo[]> {
   const ctx: DetectionContext = { cwd, binaryPaths: new Map() };
   ctx.binaryPaths = await binaryDetected(ctx);
 
-  const adapters = await loadAdapted(ctx);
+  const adapters = await loadAdapted(ctx, customAgents);
   const infos: AgentInfo[] = [];
   for (const adapter of adapters) {
     infos.push(await adapter.detect());
@@ -27,12 +27,34 @@ export async function detectAdapter(id: AgentId, cwd: string): Promise<AgentInfo
   return infos.find((i) => i.id === id) ?? null;
 }
 
-async function loadAdapted(ctx: DetectionContext): Promise<AgentAdapter[]> {
+async function loadAdapted(ctx: DetectionContext, customAgents: import("../config/config.ts").CustomAgentConfig[] = []): Promise<AgentAdapter[]> {
   const { OpencodeAdapter } = await import("./opencode.ts");
   const { ClaudeAdapter } = await import("./claude.ts");
   const { GeminiAdapter } = await import("./gemini.ts");
   const { McpAdapter } = await import("./mcp.ts");
-  return [new OpencodeAdapter(ctx), new ClaudeAdapter(ctx), new GeminiAdapter(ctx), new McpAdapter(ctx)];
+  const { CodexAdapter } = await import("./codex.ts");
+  const { AiderAdapter } = await import("./aider.ts");
+  const { ClineAdapter } = await import("./cline.ts");
+  const { CursorAdapter } = await import("./cursor.ts");
+  const { CopilotAdapter } = await import("./copilot.ts");
+  const { WindsurfAdapter } = await import("./windsurf.ts");
+  const adapters: AgentAdapter[] = [
+    new OpencodeAdapter(ctx),
+    new ClaudeAdapter(ctx),
+    new GeminiAdapter(ctx),
+    new McpAdapter(ctx),
+    new CodexAdapter(ctx),
+    new AiderAdapter(ctx),
+    new ClineAdapter(ctx),
+    new CursorAdapter(ctx),
+    new CopilotAdapter(ctx),
+    new WindsurfAdapter(ctx),
+  ];
+  if (customAgents.length > 0) {
+    const { CustomAgentAdapter } = await import("./custom.ts");
+    adapters.push(new CustomAgentAdapter(ctx, customAgents));
+  }
+  return adapters;
 }
 
 export async function binaryDetected(ctx: DetectionContext): Promise<Map<string, string | null>> {
@@ -42,6 +64,10 @@ export async function binaryDetected(ctx: DetectionContext): Promise<Map<string,
     ["gemini", "gemini"],
     ["codex", "codex"],
     ["aider", "aider"],
+    ["cursor", "cursor-agent"],
+    ["cursoride", "cursor"],
+    ["copilot", "copilot"],
+    ["windsurf", "windsurf"],
   ];
   const map = new Map<string, string | null>();
   for (const [key, binary] of names) {

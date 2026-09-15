@@ -3,6 +3,8 @@ import { CommandRegistry, execute } from "./framework.ts";
 import { initCommand, doctorCommand, statusCommand, configCommand } from "./commands/setup.ts";
 import { searchCommand, infoCommand, findCommand } from "./commands/search.ts";
 import { installCommand, uninstallCommand, updateCommand, sourceCommand } from "./commands/capabilities.ts";
+import { agentsCommand } from "./commands/agents.ts";
+import { serveMcpCommand } from "./commands/serve.ts";
 import { enableCommand, disableCommand, forceEnableCommand, forceDisableCommand, activateCommand, deactivateCommand, activeCommand } from "./commands/state.ts";
 import { routeCommand, explainCommand } from "./commands/route.ts";
 import { scanCommand, permissionsCommand, trustCommand, keysCommand, trustCheckCommand, signCommand, signaturesCommand } from "./commands/security.ts";
@@ -43,6 +45,8 @@ export function buildRegistry(): CommandRegistry {
   registry.register(decomposeCommand);
   registry.register(workflowCommand);
   // Capabilities
+  registry.register(agentsCommand);
+  registry.register(serveMcpCommand);
   registry.register(installCommand);
   registry.register(uninstallCommand);
   registry.register(updateCommand);

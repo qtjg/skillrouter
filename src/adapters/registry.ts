@@ -35,7 +35,7 @@ export class AdapterRegistry {
 
 let instance: AdapterRegistry | null = null;
 
-export async function getAdapterRegistry(ctx: DetectionContext): Promise<AdapterRegistry> {
+export async function getAdapterRegistry(ctx: DetectionContext, customAgents: import("../config/config.ts").CustomAgentConfig[] = []): Promise<AdapterRegistry> {
   if (instance) return instance;
   instance = new AdapterRegistry();
   const { OpencodeAdapter } = await import("./opencode.ts");
@@ -43,11 +43,27 @@ export async function getAdapterRegistry(ctx: DetectionContext): Promise<Adapter
   const { GeminiAdapter } = await import("./gemini.ts");
   const { McpAdapter } = await import("./mcp.ts");
   const { GenericAdapter } = await import("./generic.ts");
+  const { CodexAdapter } = await import("./codex.ts");
+  const { AiderAdapter } = await import("./aider.ts");
+  const { ClineAdapter } = await import("./cline.ts");
+  const { CursorAdapter } = await import("./cursor.ts");
+  const { CopilotAdapter } = await import("./copilot.ts");
+  const { WindsurfAdapter } = await import("./windsurf.ts");
   instance.register(new OpencodeAdapter(ctx));
   instance.register(new ClaudeAdapter(ctx));
   instance.register(new GeminiAdapter(ctx));
   instance.register(new McpAdapter(ctx));
   instance.register(new GenericAdapter(ctx));
+  instance.register(new CodexAdapter(ctx));
+  instance.register(new AiderAdapter(ctx));
+  instance.register(new ClineAdapter(ctx));
+  instance.register(new CursorAdapter(ctx));
+  instance.register(new CopilotAdapter(ctx));
+  instance.register(new WindsurfAdapter(ctx));
+  if (customAgents.length > 0) {
+    const { CustomAgentAdapter } = await import("./custom.ts");
+    instance.register(new CustomAgentAdapter(ctx, customAgents));
+  }
   return instance;
 }
 

@@ -50,7 +50,7 @@ export type CapabilityState =
   | "FAILED"
   | "OUTDATED";
 
-export type AgentId = "opencode" | "gemini" | "claude" | "codex" | "aider" | "mcp" | "generic";
+export type AgentId = "opencode" | "gemini" | "claude" | "codex" | "aider" | "mcp" | "generic" | "cline" | "cursor" | "copilot" | "windsurf" | "custom";
 
 export type Compatibility = "native" | "compatible" | "adaptable" | "unsupported";
 
