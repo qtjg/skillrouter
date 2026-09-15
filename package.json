@@ -27,10 +27,11 @@
     "test:unit": "node --experimental-strip-types --test \"tests/unit/*.test.ts\"",
     "test:router": "node --experimental-strip-types --test \"tests/router/*.test.ts\"",
     "test:cli": "node --experimental-transform-types --test \"tests/cli/*.test.ts\"",
-    "test:security": "node --test tests/security/",
-    "test:adapters": "node --test tests/adapters/",
-    "benchmark": "node --test tests/benchmark/",
-    "doctor": "node src/cli/index.ts doctor"
+    "test:security": "node --experimental-strip-types --test \"tests/unit/security-keys.test.ts\" \"tests/unit/secrets.test.ts\" \"tests/unit/policy.test.ts\"",
+    "test:adapters": "node --experimental-strip-types --test \"tests/adapters/*.test.ts\"",
+    "benchmark": "node --experimental-strip-types --test \"tests/benchmark/*.bench.ts\"",
+    "doctor": "node --experimental-transform-types src/cli/index.ts doctor",
+    "prepare": "npm run build"
   },
   "keywords": [
     "ai",
