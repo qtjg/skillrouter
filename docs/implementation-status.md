@@ -30,16 +30,6 @@ Tests: `tests/corpus/corpus.test.ts` (12). Events: `corpus.indexed`.
 
 | Requirement (PRD v2.0) | Status | Existing | Planned change |
 | --- | --- | --- | --- |
-| Sparse retrieval (BM25-style) over full corpus bodies/sections | MISSING | keyword scoring in `src/router/` operates on manifest fields only | new `src/retrieval/` BM25 index over corpus sections |
-| `EmbeddingProvider` contract + pluggable providers | MISSING | — | `EmbeddingProvider` interface; local (hashing) + remote adapters |
-| Dense retrieval + vector store | MISSING | — | `embeddings` table (migration 5); cosine/similarity search |
-| Fusion (e.g. RRF) of sparse + dense results | MISSING | — | `fusion.ts`, `RetrievalRequest/Result` contract |
-| `skillrouter retrieve <query>` CLI / library call | MISSING | `search` command | new command + doc |
-
-## Phase D2 — Hybrid Retrieval
-
-| Requirement (PRD v2.0) | Status | Existing | Planned change |
-| --- | --- | --- | --- |
 | Sparse retrieval (BM25-style) over full corpus bodies/sections | IMPLEMENTED | `src/retrieval/sparse.ts` `Bm25Index` (k1=1.2, b=0.75, deterministic) over corpus sections | — |
 | `EmbeddingProvider` contract + pluggable providers | IMPLEMENTED | `EmbeddingProvider` in `src/retrieval/types.ts`; `LocalEmbeddingProvider` (feature hashing, offline) + `OpenAiEmbeddingProvider` (OpenAI-compatible `/embeddings`) with automatic local fallback | — |
 | Dense retrieval + vector store | IMPLEMENTED | migration 5 `embeddings` table; `src/retrieval/dense.ts` cosine search, per-capability aggregation | — |
@@ -54,27 +44,12 @@ Tests: `tests/retrieval/retrieval.test.ts` (9). Events: `retrieval.queried`.
 
 | Requirement (PRD v2.0) | Status | Existing | Planned change |
 | --- | --- | --- | --- |
-| `RerankerProvider` contract + pluggable rerankers | MISSING | — | `src/rerank/` interface + default lexical/simple reranker |
-| W-score integration with retrieval results | PARTIAL | `src/router/factors.ts` W scores use manifest fields + outcomes | feed corpus + retrieval signals |
-
-## Phase D3 — Reranking
-
-| Requirement (PRD v2.0) | Status | Existing | Planned change |
-| --- | --- | --- | --- |
 | `RerankerProvider` contract + pluggable rerankers | IMPLEMENTED | `src/rerank/types.ts` + `createRerankerProvider` registry | — |
 | Default deterministic lexical reranker (corpus-informed) | IMPLEMENTED | `src/rerank/lexical.ts` `LexicalReranker`: full-body term coverage, section-kind weighting, keyword bonus, reliability nudge (Phase G), no LLM | — |
 | Perspective-aware reordering without reciprocal link preload | PARTIAL | `src/rerank/index.ts` `applyRerank` reorders fused hits deterministically | add cross-agent ranking in Phase F |
 | Config surface + CLI | IMPLEMENTED | `retrieval.rerank.{enabled,provider}`; `retrieve --no-rerank`; per-hit `rerankScore`/`rerankReason` outputs | — |
 
 Tests: `tests/rerank/rerank.test.ts` (4).
-
-## Phase D4 — Content Fingerprinting & Deduplication
-
-| Requirement (PRD v2.0) | Status | Existing | Planned change |
-| --- | --- | --- | --- |
-| `CapabilityFingerprint` (semantic + content hashes) | PARTIAL | `contentHash`/`metadataHash` in corpus record | full `CapabilityFingerprint` with feature vectors |
-| Near-duplicate detection across capabilities | MISSING | `src/router/graph.ts` `replaces/conflicts` only | similarity/dedup pass + `skillrouter duplicates` |
-| Duplicate reporting CLI | MISSING | — | TBD |
 
 ## Phase D4 — Content Fingerprinting & Deduplication
 

@@ -1,6 +1,6 @@
 # PRD Gap Analysis (v2.0 · 2026-08-19)
 
-Mapping of the current codebase against `docs/../prd.md` (Master PRD v2.0).
+Mapping of the current codebase against the Master PRD v2.0 (internal planning document, not committed to this repository).
 This is the working reference for the phased implementation plan; it is updated
 as phases land.
 
