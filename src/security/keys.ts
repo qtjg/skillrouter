@@ -52,15 +52,20 @@ export async function verifySignature(publicKeyBase64: string, payload: string, 
   if (!subtle) return false;
   try {
     const raw = fromBase64(publicKeyBase64);
+    // Copy into a fresh ArrayBuffer-backed Uint8Array so TS7's stricter
+    // ArrayBufferLike generics accept it as BufferSource (avoids
+    // SharedArrayBuffer incompatibility under the new lib.dom typings).
+    const rawBytes = new Uint8Array(raw);
     const key = await subtle.importKey(
       "raw",
-      raw as unknown as Uint8Array,
+      rawBytes,
       { name: "ECDSA", namedCurve: "P-256" },
       false,
       ["verify"],
     );
     const data = new TextEncoder().encode(payload);
-    return await subtle.verify({ name: "ECDSA", hash: "SHA-256" }, key, fromBase64(signatureBase64) as unknown as Uint8Array, data);
+    const sigBytes = new Uint8Array(fromBase64(signatureBase64));
+    return await subtle.verify({ name: "ECDSA", hash: "SHA-256" }, key, sigBytes, data);
   } catch {
     return false;
   }
