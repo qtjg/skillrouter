@@ -17,3 +17,14 @@ coverage/
 !.env.example
 *.pem
 *.key
+# npm
+.npm
+
+npm-debug.log*
+
+yarn-error.log*
+
+
+# Node version managers
+.node-version
+.nvmrc
